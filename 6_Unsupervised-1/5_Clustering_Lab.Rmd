@@ -1,0 +1,180 @@
+---
+title: "Week 6 Lab"
+author: "Ari Weil"
+date: '2022-11-03'
+output: html_document
+---
+
+```{r}
+
+library(tidyverse)
+library(quanteda)
+library(quanteda.corpora)
+library(quanteda.textstats)
+library(quanteda.textplots)
+library(lubridate)
+
+```
+
+Today's lab will show:
+
+1.  How to calculate distances in quanteda.
+2.  How to implement hierarchical clustering in R using Quanteda and base R stats functions.
+
+This material draws on Kenneth Benoit's quantitative text analysis course and the Quanteda online tutorial.
+
+# Distances in Quanteda
+
+Quanteda has two built-in functions for calculating the distance and similarity between documents.
+
+-   `textstat_dist()`
+-   `textstat_sim()`
+
+First we'll create a corpus, and preprocess to make a dfm.
+
+```{r}
+
+# create corpus
+# Just using inaugural addresses
+corp <- data_corpus_inaugural
+
+# preprocess tokens
+toks <- corp %>% 
+  tokens(split_hyphens = T,
+         remove_punct = T,
+         remove_numbers = T,
+         remove_symbols = T) %>% 
+  tokens_tolower() %>% 
+  tokens_remove(pattern = stopwords("en")) %>% 
+  tokens_wordstem()
+
+# generate dfm
+dfm <- dfm(toks)
+
+# Weight dfm to normalize
+dfm <- dfm_weight(dfm, scheme = "prop")
+
+```
+
+Next, let's see which documents are most similar to each other, using cosine similarity.
+
+```{r}
+# Calculate cosin similarity
+sim_inaug <- textstat_simil(dfm, method = "cosine", margin = "documents")
+
+# Coerce into symmetrical matrix
+cosin_mat <- as.matrix(sim_inaug)
+
+# View the matrix
+View(cosin_mat)
+```
+
+## Challenge
+
+Whose inaugural address is most similar to `2021-Biden`? Who is the most similar to `1789-Washington`?
+
+```{r}
+# Your code here
+
+
+
+```
+
+# Hierarchical Clustering
+
+## Example 1: Inaugural Speeches
+
+Generating dendrograms is fairly straightforward in Quanteda.
+
+1.  First calculate the distances between your documents
+    -   Make sure you've already normalized your document-feature matrix
+2.  Convert that result into a distance object using `as.dist()`
+3.  Use the base R function `hclust()` to compute clusters
+4.  Plot the dendrogram!
+
+```{r}
+
+# Calculate distance between documents in our normalized dfm
+# Default is correlation; we're going to use euclidean here
+dist <- dfm %>% 
+  textstat_dist(method = "euclidean", margin = "documents") %>% 
+  as.dist()
+
+# Compute hierarchical clusters
+# Default linkage is complete, but you can specify Ward's method as well
+clust <- hclust(dist)
+
+# Plot dendrogram
+plot(clust, xlab = "Distance", ylab = NULL)
+
+```
+
+## Example 2: Last 40 years of SOTUs
+
+```{r}
+
+corp_sotu <- corpus(data_corpus_sotu)
+
+corp_sotu$year <- year(corp_sotu$Date)
+
+corp_recent <- corp_sotu %>% 
+  corpus_subset(year >= 1980)
+
+toks_recent <- corp_recent %>% 
+  tokens(split_hyphens = T,
+         remove_punct = T,
+         remove_numbers = T,
+         remove_symbols = T) %>% 
+  tokens_tolower(keep_acronyms = F) %>% 
+  tokens_remove(pattern = stopwords("en")) %>% 
+  tokens_wordstem() %>% 
+  tokens_select(min_nchar = 3)
+
+# generate dfm
+# trim: only keep words used at least five times in the corpus and are in at least three speeches
+dfm_recent <- dfm(toks_recent) %>% 
+  dfm_trim(minCount = 5, minDoc = 3)
+
+# Normalize the dfm
+dfm_weight <- dfm_weight(dfm_recent, scheme = "prop")
+
+```
+
+```{r}
+
+# Calculate distance between documents
+dist_rec <- dfm_weight %>% 
+  textstat_dist(method = "euclidean", margin = "documents") %>% 
+  as.dist()
+
+# Compute hierarchical clusters
+clust_rec <- hclust(dist_rec)
+
+# Plot dendrogram
+plot(clust_rec, xlab = "Distance", ylab = NULL)
+
+```
+
+## Example 3: Clustering Terms
+
+So far, we've clustered at the document level. Now, let's look at features instead. Here, we're going to generate clusters for the top 100 terms. We're going to use a slightly different weighting scheme, term-frequency inverse-document frequency (tf-idf). This is a way of weighting words that are particularly important in certain documents. We divide each term's total frequency in the corpus by a value of its rarity, thus de-weighting very common terms.
+
+```{r}
+
+# Generate tf-idf weights
+words <- dfm_tfidf(dfm_recent) %>% 
+  dfm_sort()
+
+# Transpose and take the first 100 terms
+words <- t(words)[1:100, ]
+
+# Calculate distances
+word_dist <- dist(words)
+
+# Calculate hierarchical clusters
+word_clust <- hclust(word_dist)
+
+# Plot dendrogram
+plot(word_clust, xlab = NULL)
+
+```
