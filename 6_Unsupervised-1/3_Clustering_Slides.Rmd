@@ -153,7 +153,7 @@ Then its mean is:
 .accent[The K-means algorithm will assign each observation to the cluster with the closest mean.]
 
 ---
-### K-Means Clustering: Example]
+### K-Means Clustering: Example
 
 **Goal**: Cluster the following documents: 
 
@@ -361,9 +361,6 @@ Thus our goal is to minimize the .accent[total within-cluster sum of squares]:
 
 Clusters are substantially / semantically interpretable. 
 
-
---
-How do we interpret the clusters? 
 
 --
 1. **Manual identification **

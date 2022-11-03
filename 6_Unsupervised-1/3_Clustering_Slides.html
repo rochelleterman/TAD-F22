@@ -4,7 +4,7 @@
     <title>Automatic Clustering</title>
     <meta charset="utf-8" />
     <meta name="author" content="PLSC 21510/31510" />
-    <script src="libs/header-attrs-2.11/header-attrs.js"></script>
+    <script src="libs/header-attrs-2.16/header-attrs.js"></script>
     <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
     <link href="libs/remark-css-0.0.1/rladies.css" rel="stylesheet" />
     <link href="libs/remark-css-0.0.1/rladies-fonts.css" rel="stylesheet" />
@@ -16,7 +16,7 @@ class: center, middle, inverse, title-slide
 
 # Automatic Clustering
 ### PLSC 21510/31510
-### Spring 2022
+### Fall 2022
 
 ---
 
@@ -138,7 +138,7 @@ Then its mean is:
 .accent[The K-means algorithm will assign each observation to the cluster with the closest mean.]
 
 ---
-### K-Means Clustering: Example]
+### K-Means Clustering: Example
 
 **Goal**: Cluster the following documents: 
 
@@ -334,9 +334,6 @@ Clusters are substantially / semantically interpretable.
 
 
 --
-How do we interpret the clusters? 
-
---
 1. **Manual identification **
   - Sample set of documents from same cluster 
   - Read documents 
@@ -355,11 +352,6 @@ How do we interpret the clusters?
   - Provide documents + code 
   - Detail labeling procedures
   - Acknowledge ambiguity 
-
----
-class: middle
-
-## To `\(\texttt{R}\)` Code!
 
 ---
 class: middle, center, title-slide, inverse
@@ -434,6 +426,9 @@ Step 4: Continue until single cluster remains
 Step 5: Return tree of cluster-merges
 
 ---
+class: middle
+
+## To `\(\texttt{R}\)` Code!
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
 <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
