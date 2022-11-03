@@ -1,7 +1,7 @@
 ---
 title: "Clustering - Demonstration"
 author: "PLSC 21510/31510"
-date: "Spring 2022"
+date: "Fall 2022"
 output: html_document
 ---
 
@@ -31,7 +31,7 @@ Load that file to import the object `flake_matrix`.
 
 ```{r}
 # load file
-load('FlakeMatrix.RData')
+load('data/FlakeMatrix.RData')
 
 # print the dimensions of the DTM. How many documents + words are there?
 dim(flake_matrix)
@@ -151,7 +151,7 @@ We can modify our keyword procedure slightly to obtain those **distinct** keywor
 ```{r}
 key_words2<- matrix(NA, nrow=10, ncol=k)
 for(z in 1:k){
-	diff <- k_cluster$center[z,] - colMeans(x)
+	diff <- k_cluster$center[z,] - colMeans(k_cluster$center[-z,])
 	key_words2[,z]<- names(sort(diff, decreasing=T)[1:10])
 }
 ```
