@@ -1,0 +1,153 @@
+---
+title: "Dictionary Methods"
+author: "PLSC 21510/31510"
+date: "Fall 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## 1. Comparing Songs from Taylor Swift's catalogue
+
+To demonstrate sentiment analysis, we're going to explore lyrics from Taylor Swift songs. 
+
+Road the code below to get started.
+
+```{r}
+# uncomment to install a new package
+# install.packages("textdata")
+
+# load
+library(tidyverse)
+library(textdata)
+library(quanteda)
+library(tidytext)
+library(scales)
+
+# make taylor corpus
+ts <- read.csv("data/taylor_swift.csv")
+corp_ts <- corpus(ts, text_field = "lyrics", docid_field = "track_title")
+```
+
+### 1.1 
+
+First we must preprocess the corpus. Create a document-term matrix from the `lyrics` column of the `ts` data frame. Complete the following preprocessing steps:
+- remove punctuation, numbers, symbols
+- split hyphens.
+- convert to lower
+- remove stop words
+
+**Think**: Why is stemming inappropriate for this application?
+
+```{r}
+# preprocess and create DTM
+toks_taylor <- corp_ts %>%
+  tokens(split_hyphens = T,
+         remove_punct = TRUE,
+         remove_numbers = TRUE,
+         remove_symbols = TRUE) %>%
+  tokens_tolower() %>% 
+  tokens_remove(pattern = stopwords("en")) 
+dfm_ts <- dfm(toks_taylor)
+```
+
+## 2. Setting up the sentiment dictionary
+
+### 2.1
+
+We're going to use sentiment dictionaries from the `tidytext` package. Using the `get_sentiments` function, load the "bing" dictionary and store it in an object called `sent`. 
+
+```{r}
+sent <- get_sentiments("bing") 
+head(sent)
+```
+
+### 2.2
+
+Now pass `sent` into the `as.dictionary()` function from `quanteda`, which converts into a dictionary object that we can use to score our documents.
+
+```{r}
+sent_dict <- as.dictionary(sent)
+head(sent_dict)
+```
+
+## 3. Scoring the songs
+
+### 3.1 
+
+We're now ready to score each song. We'll first use  `dfm_lookup()` to find all the words matching the dictionary. We can convert to proportions using `dfm_weight`.
+
+```{r}
+# find frequencies
+dfm_sent <- dfm_lookup(dfm_ts, dictionary = sent_dict)
+dfm_sent
+
+# convert to proportions
+dfm_sent_prop <- dfm_weight(dfm_sent, scheme = "prop")
+dfm_sent_prop
+```
+
+### 3.2
+
+We can convert this into a dataframe and plot. Let's do it with just the first 10 songs.
+
+```{r}
+# convert first 10 songs to a dataframe and reshape
+sentiment_10 <- convert(dfm_sent_prop, "data.frame") %>%
+  slice(1:10) %>%
+  gather(positive, negative, key = "Polarity", value = "Share") %>% 
+  mutate(Song = as_factor(doc_id)) 
+
+# plot the first 10 songs
+sentiment_10 %>%
+  ggplot(aes(Song, Share, fill = Polarity, group = Polarity)) +
+  geom_bar(stat='identity', position = position_dodge(), size = 1) +
+  scale_fill_brewer(palette = "Set1") + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + 
+  ggtitle("Sentiment scores in 10 Taylor Swift Songs")
+```
+
+## 3.3
+
+We might not want to depict both polarities. Since the negative polarity is simply the inversion of the positive sentiment, we just need to keep the positive sentiment. And we can rescale the values using `rescale` so that they are between -1 and +1, with -` being the least positive of the set, and +1 being the most.
+
+```{r}
+sentiment_10 <- convert(dfm_sent_prop, "data.frame") %>%
+  mutate(Sentiment = rescale(positive, to = c(-1,1))) %>% 
+  mutate(Song = as_factor(doc_id)) %>%
+  slice(1:10)
+sentiment_10
+
+# plot the first 10 songs
+ggplot(sentiment_10, aes(Song, Sentiment, group = 1)) + 
+  geom_line(size = 1) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "lightgray") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  ggtitle("Sentiment scores in 10 Taylor Swift Songs")
+```
+
+Which song is happiest? Go listen to the song and see if you agree.
+
+## 4. Challenges
+
+### 4.1 Challenge 1
+
+Adapting the code above, find out what the most and least positive Taylor Swift album is.
+
+```{r}
+# YOUR CODE HERE
+```
+
+### 4.2 Challenge 2
+
+Read this tutorial: https://tutorials.quanteda.io/advanced-operations/targeted-dictionary-analysis/
+
+Adapt it to see how Taylor talks about "love".
+
+```{r}
+# YOUR CODE HERE
+```
+

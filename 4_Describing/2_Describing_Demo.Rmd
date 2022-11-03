@@ -1,0 +1,178 @@
+---
+title: "Describing"
+author: "PLSC 21510/31510"
+date: "2022"
+output: html_document
+---
+
+> Note!
+> I **highly** recommend you make a copy of this document using "save as." 
+> Then you can edit and play without losing the original code.
+
+In this document, we will demonstrate some of the techniques for dscriptive inferences. Some of this material was remixed from: 
+- [quanteda tutorial website](https://tutorials.quanteda.io/).
+- Arthur Spirling and associates
+
+Load these packages to get started.
+
+```{r message=F}
+# quanteda stuff
+require(quanteda)
+require(quanteda.textmodels)
+require(quanteda.textstats)
+require(quanteda.textplots)
+require(quanteda.corpora)
+
+# other stuff
+require(readtext)
+require(devtools)
+require(tidyverse) # Data preparation and pipes %>%
+require(ggplot2) # For plotting word frequencies
+```
+
+## Frequency
+
+Unlike `topfeatures()`, `textstat_frequency()` shows both term and document frequencies. You can also use the function to find the most frequent features within groups using the `group` argument.
+
+```{r}
+data(data_corpus_ungd2017)
+
+# make tokens object
+toks_un <- data_corpus_ungd2017 %>%
+   tokens(remove_punct = TRUE) 
+
+# make dfm
+dfm_un <- toks_un %>% dfm() 
+
+# calculate frequency
+textstat_frequency(dfm_un, n = 2, groups = continent)
+```
+
+We can remove some very common terms to get better results
+
+```{r}
+dfm_un %>% 
+  dfm_remove(stopwords("english")) %>%
+  dfm_remove(c("united", "nations", "international")) %>%
+  textstat_frequency(n = 2, groups = continent)
+```
+
+## Keywords in Context
+
+Let's say we wanted to know how leaders talked about "climate change" in the UN:
+
+```{r}
+# make tokens object
+kwic(toks_un, pattern = phrase("climate change"), window = 5, case_insensitive = T) %>%
+  head(5)
+```
+
+## Collocations
+
+This corpus contains 6,000 Guardian news articles from 2012 to 2016. To speed things up, we'll take the first 1000 articles.
+
+We remove punctuation marks and symbols in `tokens()` and stopwords in `tokens_remove()` with `padding = TRUE` to keep the original positions of tokens.
+
+```{r}
+corp_news <- download("data_corpus_guardian")[1:1000]
+
+toks_news <- tokens(corp_news, remove_punct = TRUE, remove_symbols = TRUE, padding = TRUE) %>% 
+    tokens_remove(stopwords("en"), padding = TRUE)
+```
+
+We can find bigram-collocations using:
+
+```{r}
+bigram_coll <- textstat_collocations(toks_news) # will take a minute
+
+# what is the difference between these two calls?
+head(bigram_coll)
+bigram_coll %>% arrange(-lambda) %>% head()
+```
+
+One of the most common type of multi-word expressions is proper names, which we can select simply based on capitalization in English texts.
+
+```{r}
+toks_news_cap <- tokens_select(toks_news, 
+                               pattern = "^[A-Z]",
+                               valuetype = "regex",
+                               case_insensitive = FALSE, 
+                               padding = TRUE)
+
+names_coll <- textstat_collocations(toks_news_cap, min_count = 10, tolower = FALSE)
+head(names_coll)
+```
+
+### Challenge 1
+
+1. Alter the code about to find trigram collocations. 
+2. Play around the "min_count" argument to see what it does. 
+
+## Lexican Diversity
+
+Let's examine diversity and readability in the `data_corpus_ukmanifestos` corpus. It contains corpus object containing 105 UK Manifestos from 1945–2005, with party and year attributes.
+
+```{r}
+data(data_corpus_ukmanifestos)
+toks_uk <- tokens(data_corpus_ukmanifestos, remove_punct = TRUE) 
+```
+
+### Type Token Ratio 
+
+```{r}
+# Num tokens per document
+num_tokens <- lengths(toks_uk)
+
+# Num types
+num_types <- ntype(toks_uk)
+
+# Combine into data frame
+df <- data.frame("num_tokens" = num_tokens, 
+                              "num_types" = num_types,
+                              "year" = data_corpus_ukmanifestos$Year,
+                              "party" = data_corpus_ukmanifestos$Party)
+
+# calculate TTR
+df <- df %>% mutate(TTR = num_types / num_tokens)
+head(df)
+```
+
+We can also calculate mean per-document TTR scores by  party
+
+```{r}
+TTR_by_year_party <- df %>% 
+  group_by(party) %>% 
+  summarise(mean_ttr = mean(TTR, na.rm = TRUE))
+  
+View(TTR_by_year_party)
+```
+
+#### Calculate TTR score by year, party using `textstat_lexdiv`
+
+The function `textstat_lexdiv` "calculates the lexical diversity or complexity of text(s)" using any number of measures.'
+
+```{r}
+TTR <- textstat_lexdiv(toks_uk, measure = "TTR")
+```
+
+## Complexity / Readability
+
+Read the documentation for `textstat_readability` first!
+
+```{r}
+?textstat_readability
+
+# FRE measure
+# (https://en.wikipedia.org/wiki/Flesch–Kincaid_readability_tests)
+textstat_readability(data_corpus_ukmanifestos, "Flesch") %>% head()
+
+# By party
+textstat_readability(corpus_group(data_corpus_ukmanifestos, groups = Party), "Flesch") 
+
+# Dale-Chall measure (https://en.wikipedia.org/wiki/Dale–Chall_readability_formula)
+textstat_readability(data_corpus_ukmanifestos, "Dale.Chall.old") %>% head()
+textstat_readability(corpus_group(data_corpus_ukmanifestos, groups = Party), "Dale.Chall.old")
+```
+
+### Challenge 2: 
+

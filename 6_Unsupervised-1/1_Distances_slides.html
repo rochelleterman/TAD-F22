@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Distances</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="PLSC 21510/31510" />
+    <script src="libs/header-attrs-2.16/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies-fonts.css" rel="stylesheet" />
+    <link rel="stylesheet" href="libs/rt.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Distances
+### PLSC 21510/31510
+### Fall 2022
+
+---
+
+
+
+
+
+
+
+## Two broad approaches
+
+
+--
+### Supervised methods
+
+We identify what we’re interested in first, and then use computers to extend our insights to a larger population of unseen documents.
+
+
+--
+### Unsupervised methods 
+
+We do not specify the conceptual structure of the texts beforehand. Instead, we use the model to discover a structure that best explains the documents.
+
+---
+### Components to Unsupervised Learning Method
+
+.accent[Unsupervised methods]: Discover new ways of organizing texts that are theoretically useful, but perhaps understudied or previously unknown.
+
+--
+1. Set of unlabeled documents that we want to classify
+
+--
+2. Method to discover categories and then classify documents into those
+categories (k-means clustering, topic models)
+
+--
+3. Interpretation skills to assign labels to categories and understand what they mean.
+
+---
+### Cluster analysis / Clustering
+
+- Goal is to ascertain, on the basis of `\(x_1, x_2, ..., x_n\)` , whether the observations fall into relatively distinct groups.
+
+- These groups are interesting because the may correspond to some category or quantity of interest.
+
+---
+class: middle, center
+
+&lt;img src="img/clustering.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+class: middle, center
+
+&lt;img src="img/JeffFlakeBanner.jpg" width="100%" style="display: block; margin: auto;" /&gt;
+
+---
+### Game Plan
+
+.accent[Today]: Cluster press releases
+
+&lt;/br&gt;
+.accent[Goal]: partition documents such that:
+- similar documents are together 
+- dissimilar documents are apart
+
+&lt;/br&gt;
+.accent[Method]: Clustering methods 
+1. What makes two data points (i.e. documents) similar? 
+2. How do we find a good partition?
+3. How do we interpret the clusters?
+
+---
+### Key Terms
+- (Multidimensional) Space
+- Distance
+- Euclidean Distance
+- Cosine Distance
+- Cluster Analysis / Clustering 
+- K-means
+- Centroid
+
+---
+class: middle, center, inverse, title-slide
+
+## Text Distance and Similarity
+
+---
+class: middle
+
+### What makes two documents similar?
+
+- Similar use of language `\(\leadsto\)` .accent[complicated] 
+- Similar word count vectors `\(\leadsto\)` .accent[simple]  
+
+
+--
+.large[Similar = Geometrically .accent[Close]] 
+
+.large[Dissimilar = Geometrically .accent[Distant]]
+
+---
+### Texts and Geometry
+
+Consider a document-term matrix: 
+
+&lt;div class="math"&gt;
+\begin{eqnarray}
+\boldsymbol{X} &amp; = &amp; 
+\begin{pmatrix}
+1 &amp; 2 &amp; 0 &amp; \dots &amp; 0 \\
+0 &amp; 0 &amp; 3 &amp; \dots &amp; 0 \\
+\vdots &amp; \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+1 &amp; 0 &amp; 0 &amp; \dots &amp; 3 \\
+\end{pmatrix} 
+\end{eqnarray} 
+&lt;/div&gt;
+
+
+
+By transforming our text into a word count vector, we are representing it as a point in a multidimensional .accent[space] 
+
+
+--
+- Provides a .accent[geometry] 
+
+
+--
+- Natural notions of .accent[distance] and .accent[similarity]
+
+
+--
+- Tools from .accent[linear algebra] to calculate distances mathematically.
+
+---
+### Texts in Space
+
+&lt;img src="img/Doc1.jpg" width="70%" style="display: block; margin: auto;" /&gt;
+
+Doc1 = "Wait? No wait." `\(\leadsto (2, 1)\)`
+
+---
+### Texts in Space
+
+&lt;img src="img/Doc2.jpg" width="70%" style="display: block; margin: auto;" /&gt;
+
+Doc1 = "Wait? No wait." `\(\leadsto (2, 1)\)`
+
+Doc2 = "No, wait! No, no, no!"  `\(\leadsto (1, 4)\)` 
+
+---
+### Texts in Space
+
+&lt;img src="img/Doc3.jpg" width="70%" style="display: block; margin: auto;" /&gt;
+
+Doc1 = "Wait? No wait." `\(\leadsto (2, 1)\)`
+
+Doc2 = "No, wait! No, no, no!"  `\(\leadsto (1, 4)\)` 
+
+
+---
+### Euclidean Distance
+
+Suppose `\(\boldsymbol{X}_{1} = (1, 4)\)` and `\(\boldsymbol{X}_{2} = (2, 1)\)` .  
+
+
+--
+The .accent[Euclidean distance] (aka .accent[norm]) between `\(\boldsymbol{X}_{1}\)` and `\(\boldsymbol{X}_{2}\)` (or from `\(\boldsymbol{X}_{1}\)` and `\(\boldsymbol{X}_{2}\)` ) is the length of the line segment connecting them. 
+
+--
+&lt;div class="math"&gt;
+\begin{eqnarray}
+d(\boldsymbol{X}_{1}, \boldsymbol{X}_{2} ) = d(\boldsymbol{X}_{2}, \boldsymbol{X}_{1}) &amp; = &amp; \sqrt{ (x_{1,1} - x_{2,1} )^2 + (x_{1,2} - x_{2,2})^2} \\ 
+&amp; = &amp; \sqrt{ (1 - 2 )^2 + (4 - 1)^2}  \\ 
+&amp; = &amp; \sqrt{10}    
+\end{eqnarray}
+&lt;/div&gt;
+
+
+--
+.accent[This generalizes beyond 2 dimensions!] 
+
+--
+&lt;div class="math"&gt;
+\begin{eqnarray}
+d(\boldsymbol{X}_{1}, \boldsymbol{X}_{2} )   &amp; = &amp; \sqrt{\left(x_{1,1} -  x_{2,1} \right)^2 + \left(x_{1,2} - x_{2,2} \right)^2 + \cdots  + \left(x_{1,p} -  x_{2,p} \right)^2}   \\ 
+ &amp; = &amp; \sqrt{\sum_{p=1}^{P} \left(x_{1p} -  x_{2p} \right)^2}  
+\end{eqnarray}
+&lt;/div&gt;
+
+
+---
+### Test your knowledge
+
+The Euclidean distance between any documents `\(\boldsymbol{X}_{1}\)` and `\(\boldsymbol{X}_{2}\)` is: 
+
+&lt;div class="math"&gt;
+\begin{eqnarray}
+d(\boldsymbol{X}_{1}, \boldsymbol{X}_{2})  &amp; =  &amp; \sqrt{\sum_{p=1}^{P} \left(x_{1p} - x_{2p} \right)^2}  
+\end{eqnarray}
+&lt;/div&gt;
+
+
+--
+Suppose:
+- `\(\boldsymbol{X}_{1} = \text{Oh na na na.}\)` 
+- `\(\boldsymbol{X}_{2} = \text{Oh, me? Na.}\)`
+
+Calculate the euclidean distance between these two documents. 
+
+---
+### Problem(?) with Euclidean Distance
+
+.pull-left[
+&lt;img src="img/Fig1.jpg" width="70%" style="display: block; margin: auto;" /&gt;
+]
+
+.pull-right[
+
+&lt;div class="math"&gt;
+\begin{eqnarray}
+\boldsymbol{X}_{1} &amp; = &amp;  (2,1) \\
+\boldsymbol{X}_{2} &amp; = &amp; (1,4)  \\
+d(\boldsymbol{X}_{1}, \boldsymbol{X}_{2} ) &amp; = &amp; \sqrt{ (1 -2 )^2 + (4 - 1)^2 } \\
+&amp; = &amp; \sqrt{10}   
+\end{eqnarray}
+&lt;/div&gt;
+
+]
+
+---
+### Problem(?) with Euclidean Distance
+
+.pull-left[
+&lt;img src="img/Fig2.jpg" width="70%" style="display: block; margin: auto;" /&gt;
+]
+
+.pull-right[
+
+&lt;div class="math"&gt;
+\begin{eqnarray}
+\boldsymbol{X}_{1} &amp; = &amp;  (2,1)\nonumber \\
+\boldsymbol{X}_{2} &amp; = &amp; (1,4) \nonumber \\
+\boldsymbol{X}_{3} &amp; = &amp; 2 \boldsymbol{X}_{1} = (4, 2) \nonumber \\
+d(\boldsymbol{X}_{3}, \boldsymbol{X}_{2} ) &amp; = &amp; \sqrt{ (4 - 1)^2 + (2 - 4)^2}  \nonumber \\
+&amp; = &amp; \sqrt{13} \nonumber 
+\end{eqnarray}
+&lt;/div&gt;
+
+.accent[Euclidean distance depends on document-length.]
+
+]
+
+---
+### Cosine Similarity
+
+.pull-left[
+&lt;img src="img/Fig4.jpg" width="70%" style="display: block; margin: auto;" /&gt;
+]
+
+.pull-right[
+- Takes into consideration documents length. 
+- Measures .accent[cosine] of the angle ( `\(\theta\)` ) between vectors. 
+- Measure of similarity (rather than distance) ranging between 0 and 1. 
+- To convert to distance (or dissimilarity), take `\(1 - \cos \theta\)` . 
+]
+
+
+---
+### Vector Length
+
+.pull-left[
+&lt;img src="img/Length1.jpg" width="100%" style="display: block; margin: auto;" /&gt;
+]
+
+.pull-right[
+
+]
+
+---
+### Vector Length
+
+.pull-left[
+&lt;img src="img/Length4.jpg" width="100%" style="display: block; margin: auto;" /&gt;
+]
+
+.pull-right[
+.accent[Pythagorean Theorem]: 
+- Side with length `\(a\)`
+- Side with length `\(b\)` and right triangle
+- `\(c = \sqrt{ a^2 + b^2}\)`
+- **Extends beyond 2 dimensions**
+]
+
+---
+### Vector (Euclidean) Length 
+
+Suppose `\(\boldsymbol{X}_{i}\)` is a document (row from an `\(N \times K\)` document-term matrix). 
+
+Then, we will define its .accent[length] as 
+
+&lt;div class="math"&gt;
+\begin{eqnarray}
+||\boldsymbol{X}_i|| &amp; = &amp; \sqrt{(\boldsymbol{X}_{i} \cdot \boldsymbol{X}_{i} )} \nonumber \\
+	&amp; = &amp; \sqrt{(X_{i1}^2 + X_{i2}^{2} + X_{i3}^{2} + \dots + X_{iK}^{2} )} \nonumber \\
+						   &amp; = &amp; \sqrt{\sum_{k=1}^{K}  X_{ik}^2} \nonumber 
+\end{eqnarray}						   
+&lt;/div&gt;
+
+
+---
+### Cosine Similarity
+
+&lt;div class="math"&gt;
+\begin{eqnarray}
+\cos \theta &amp; = &amp; \frac{X_1}{||X_1||}  \cdot \frac{X_2}{||X_2||} \\ 
+\\
+\frac{(4,2)}{||(4,2) ||} &amp; = &amp; (0.89, 0.45) \\
+\\
+\frac{(2,1)}{||(2,1) || } &amp; = &amp; (0.89, 0.45) \\
+\\
+\frac{(1,4)} {||(1,4)||}  &amp; = &amp; (0.24, 0.97)  \\
+\\
+(0.89, 0.45)\cdot (0.24, 0.97) &amp; = &amp; 0.65 \\
+\\
+\cos\text{dissimilarity}  &amp; = &amp;  1 - \cos \theta  
+\end{eqnarray}
+&lt;/div&gt;
+
+---
+### Review
+
+#### What makes two data points (i.e. documents) similar?
+
+--
+- Similar = Geometrically close
+- Euclidean distance
+- Cosine distance
+- Many more! (as always...) 
+
+
+--
+#### Why do we care?
+- Distances `\(\leadsto\)` clustering.
+- Other applications 
+  - Plagiarism,
+  - Diffusion of policy 
+
+
+--
+#### Next Up
+- How do we find a good partition?
+- How do we interpret the clusters?
+
+---
+class: middle
+
+## To `\(\texttt{R}\)` Code!
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

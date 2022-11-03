@@ -1,0 +1,178 @@
+---
+title: "Webscraping Demo"
+author: "PLSC 21510/31510"
+date: "Fall 2022"
+output: html_document
+---
+
+## Scraping Presidential Statements
+
+To demonstrate webscraping in R, we are going to collect records on presidential statements here: https://www.presidency.ucsb.edu/
+
+Let's say we are interested in how presidents speak about "space exploration." On the website, we punch in this search term, and we get the [following 380 results](https://www.presidency.ucsb.edu/advanced-search?field-keywords=%22space+exploration%22&field-keywords2=&field-keywords3=&from%5Bdate%5D=&to%5Bdate%5D=&person2=&items_per_page=100). 
+
+Our goal is to scrape these records and store pertinent information in a dataframe. We will be doing this in two steps:
+
+1. Write a function to scrape each individual record page (these notes).
+2. Use this function to loop through all results, and collect all pages (homework).
+
+Load the following packages to get started:
+
+```{r warning=FALSE, message=FALSE}
+library(tidyverse)
+library(rvest)
+library(stringr)
+library(purrr)
+library(lubridate)
+```
+
+### Using `RVest` to Read HTML
+
+The package `RVest` allows us to:
+
+1. Collect the HTML source code of a webpage.
+2. Read the HTML of the page.
+3. Select and keep certain elements of the page that are of interest.
+
+Let's start with step one. We use the `read_html` function to call the results URL and grab the HTML response. Store this result as an object.
+
+```{r}
+document1 <- read_html("https://www.presidency.ucsb.edu/documents/special-message-the-congress-relative-space-science-and-exploration")
+
+# Let's take a look at the object we just created
+document1
+```
+This is pretty messy. We need to use `RVest` to make this information more usable.
+
+### Find Page Elements
+
+`RVest` has a number of functions to find information on a page. Like other webscraping tools, `RVest` lets you find elements by their:
+
+1. HTML tags.
+2. HTML attributes.
+3. CSS selectors.
+
+Let's search first for HTML tags.
+
+The function `html_nodes` searches a parsed HTML object to find all the elements with a particular HTML tag, and returns all of those elements.
+
+What does the example below do?
+
+```{r}
+html_nodes(document1, "a")
+```
+
+That is a lot of results! Many elements on a page will have the same HTML tag. For instance, if you search for everything with the `a` tag, you are likely to get a lot of stuff, much of which you do not want. 
+
+In our case, we only want the links corresponding to the speaker Dwight D. Eisenhower.
+
+![](img/scraping-links.png)
+
+#### Challenge 1: Find the CSS Selector. 
+
+Use Selector Gadget to find the CSS selector for the document's *speaker*.
+
+Then, modify an argument in `html_nodes` to look for this more specific CSS selector.
+
+```{r}
+# YOUR CODE HERE
+```
+
+### Get Attributes and Text of Elements
+
+Once we identify elements, we want to access information in those elements. Oftentimes this means two things:
+
+1) Text.
+2) Attributes.
+
+Getting the text inside an element is pretty straightforward. We can use the `html_text()` command inside of `RVest` to get the text of an element:
+
+```{r}
+# Scrape individual document page
+document1 <- read_html("https://www.presidency.ucsb.edu/documents/special-message-the-congress-relative-space-science-and-exploration")
+
+# Identify element with speaker name
+speaker <- html_nodes(document1, ".diet-title a") %>% 
+  html_text() # Select text of element
+
+speaker
+```
+
+You can access a tag's attributes using `html_attr`. For example, we often want to get a URL from an `a` (link) element. This is the URL the link "points" to. It is contained in the attribute `href`:
+
+```{r}
+speaker_link <- html_nodes(document1, ".diet-title a") %>% 
+  html_attr("href")
+
+speaker_link
+```
+
+### Let's DO This
+
+Believe it or not, that is all you need to scrape a website. Let's apply those skills to scrape a sample document from the UCSB website -- the [first item in our search results]("http://www.presidency.ucsb.edu/documents/letter-t-keith-glennan-administrator-national-aeronautics-and-space-administration"). 
+
+We will collect the document's date, speaker, title, and full text.
+
+**Think**: Why are we doing through all this effort to scrape just one page?
+
+1. Date
+
+```{r, message=FALSE}
+document1 <- read_html("https://www.presidency.ucsb.edu/documents/special-message-the-congress-relative-space-science-and-exploration")
+
+date <- html_nodes(document1, ".date-display-single") %>%
+  html_text() %>% # Grab element text
+  mdy() # Format using lubridate
+
+date
+```
+
+2. Speaker
+
+```{r, message=FALSE}
+speaker <- html_nodes(document1, ".diet-title a") %>%
+  html_text()
+
+speaker
+```
+
+3. Title
+
+```{r, message=FALSE}
+title <- html_nodes(document1, "h1") %>%
+  html_text()
+
+title
+```
+
+4. Text
+
+```{r, message=FALSE}
+text <- html_nodes(document1, "div.field-docs-content") %>%
+          html_text()
+
+# This is a long document, so let's just display the first 1,000 characters
+text %>% str_sub(1, 1000) 
+```
+
+#### Challenge 2: Make a Function.
+
+Make a function called `scrape_docs` that accepts a URL of an individual document, scrapes the page, and returns a list containing the document's date, speaker, title, and full text.
+
+This involves:
+
+- Requesting the HTML of the webpage using the full URL and RVest.
+- Using RVest to locate all elements on the page we want to save.
+- Storing each of those items into a list.
+- Returning that list.
+
+```{r eval = F}
+scrape_docs <- function(URL){
+
+  # YOUR CODE HERE
+  
+}
+
+# Uncomment to test
+# scrape_doc("https://www.presidency.ucsb.edu/documents/letter-t-keith-glennan-administrator-national-aeronautics-and-space-administration")
+```

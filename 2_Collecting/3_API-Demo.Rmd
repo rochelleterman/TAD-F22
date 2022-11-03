@@ -1,0 +1,221 @@
+---
+title: "API Queries"
+author: "PLSC 21510/31510"
+date: "Fall 2022"
+output: html_document
+---
+
+## Writing API Queries
+
+If no wrapper package is available, we have to write our own API query, and format the response ourselves using R. This is trickier, but definitely do-able.
+
+In this unit, we'll practice constructing our own API queries using the New York Times' `Article API`. This API provides metadata (title, date, summary, etc) on all of New York Times articles.
+
+Fortunately, this API is [very well documented](https://developer.nytimes.com/docs/articlesearch-product/1/overview)!
+
+You can even try it out [here](https://developer.nytimes.com/docs/articlesearch-product/1/routes/articlesearch.json/gett)
+
+### Getting Started
+
+To get started, first register for an API key [here](https://developer.nytimes.com/get-started).
+
+Then load the following packages:
+
+```{r message=F}
+library(tidyverse)
+library(httr)
+library(jsonlite)
+library(lubridate)
+```
+
+### Constructing the API GET Request
+
+Likely the most challenging part of using web APIs is learning how to format your GET request URLs. While there are common architectures for such URLs, each API has its own unique quirks. For this reason, carefully reviewing the API documentation is critical.
+
+Most GET request URLs for API querying have three or four components:
+
+1. *Authentication Key/Token*: a user-specific character string appended to a base URL telling the server who is making the query; allows servers to efficiently manage database access
+
+2. *Base URL*: a link stub that will be at the beginning of all calls to a given API; points the server to the location of an entire database
+
+3. *Search Parameters*: a character string appended to a base URL that tells the server what to extract from the database; basically a series of filters used to point to specific parts of a database
+
+4. *Response Format*: a character string indicating how the response should be formatted; usually one of `.csv`, `.json`, or `.xml`. 
+
+Let's go ahead and store the these values as variables:
+
+```{r}
+key <- "" # YOUR KEY HERE
+base.url <- "http://api.nytimes.com/svc/search/v2/articlesearch.json"
+search_term <- "Mearsheimer"
+```
+
+How did I know the `base.url`? I read the [documentation.](https://developer.nytimes.com/docs/articlesearch-product/1/routes/articlesearch.json/get). 
+
+Notice that this `base.url` also includes the *response format*(`.json`), so we don't need to configure that directly.
+
+We're ready to make the request. We can use the `GET` function from the `httr` package (another `tidyverse` package) to make an HTTP GET Request.
+
+```{r}
+r <- GET(base.url, query = list(`q` = search_term,
+                                `api-key` = key))
+```
+
+Now, we have an object called `r`. We can get all the information we need from this object. For instance, we can see that the URL has been correctly encoded by printing the URL. Click on the link to see what happens.
+
+```{r}
+r$url
+```
+
+#### Challenge 1: Adding a date range 
+
+What if we only want to search within a particular date range? The NYT Article API allows us to specify start and end dates.
+
+Alter the `get.request` code above so that the request only searches for articles in the year 2005.
+
+You're gonna need to look at the [documentation](https://developer.nytimes.com/docs/articlesearch-product/1/routes/articlesearch.json/get) to see how to do this.
+
+#### Challenge 2: Specifying a results page 
+
+The above will return the first 10 results. To get the next ten, you need to add a "page" parameter. Change the search parameters above to get the second 10 results.
+
+### Parsing the response
+
+We can read the content of the server’s response using the `content()` function.
+
+```{r} 
+response <- content(r, "text")
+str_sub(response, start = 1, end = 1000)
+```
+
+What you see here is JSON text, encoded as plain text. JSON stands for "Javascript object notation." Think of JSON like a nested array built on key/value pairs. 
+
+We want to convert the results from JSON format to something easier to work with -- notably a data frame.  
+
+The `jsonlite` package provides several easy conversion functions for moving between JSON and vectors, dataframes, and lists. Let's use the function `fromJSON` to convert this response into something we can work with:
+
+```{r}
+# Convert JSON response to a dataframe
+response_df <- fromJSON(response, simplifyDataFrame = TRUE, flatten = TRUE)
+
+# Inspect the dataframe
+str(response_df, max.level = 2)
+```
+
+That looks intimidating! But it's really just a big, nested list. Let's see what we got in there.
+
+```{r}
+names(response_df)
+
+# This is boring
+response_df$status
+
+# So is this
+response_df$copyright
+
+# This is what we want!
+names(response_df$response)
+```
+
+Within `response_df$response`, we can extract a number of interesting results, including the number of total hits, as well as information on the first ten documents:
+
+```{r}
+# What's in 'meta'?
+response_df$response$meta
+
+# pull out number of hits
+response_df$response$meta$hits
+
+# Check out docs
+names(response_df$response$docs)
+
+# put it in another variable
+docs <- response_df$response$docs
+```
+
+### Iteration through results pager
+
+That's great. But we only have 10 items. The original response said we had 156 hits! Which means we have to make 156 /10, or 16 requests to get them all. Sounds like a job for iteration!
+
+First, let's write a function that passes a search term and a page number, and returns a dataframe of articles.
+
+```{r error = F, message = F}
+nytapi <- function(term = NULL, n){
+  
+    # Send GET request
+    r <- GET(base.url, query = list(`q` = term,
+                                  `api-key` = key,
+                                  `page` = n))
+    
+    # Parse response to JSON
+    response <- content(r, "text")  
+    response_df <- fromJSON(response, simplifyDataFrame = T, flatten = T)
+    
+    print(paste("Scraping page: ", as.character(n)))
+    
+    return(response_df$response$docs)
+}
+
+docs <- nytapi("Mearsheimer", 2)
+```
+
+Now, we're ready to iterate over each page. First, let's review what we've done so far:
+
+```{r}
+# set base and search term
+base.url <- "http://api.nytimes.com/svc/search/v2/articlesearch.json" 
+search_term <- "Mearsheimer" 
+  
+# Send GET request
+r <- GET(base.url, query = list(`q` = search_term,
+                                `api-key` = key))
+  
+# Parse response to JSON
+response <- content(r, "text")  
+response_df <- fromJSON(response, simplifyDataFrame = T, flatten = T)
+
+# extract hits
+hits <- response_df$response$meta$hits
+
+# get number of pages
+pages <- ceiling(hits/10)
+
+# modify function to sleep
+nytapi_slow <- slowly(nytapi, rate = rate_delay(6))
+
+# iterate over pages, getting all docs
+docs_list <- map((0:(pages-1)), ~nytapi_slow(term = search_term, n = .))
+
+# flatten to create one bit dataframe
+docs_df <- bind_rows(docs_list)
+```
+
+### Visualizing Results
+
+To figure out how John Mearsheimer's popularity is changing over time, all we need to do is add an indicator for the year and month each article was published in.
+
+```{r}
+# Format pub_date using lubridate
+docs_df$date <- ymd_hms(docs_df$pub_date)
+
+by_month <- docs_df %>% group_by(floor_date(date, "month")) %>%
+  summarise(count = n()) %>%
+  rename(month = 1)
+
+by_month %>%
+  ggplot(aes(x = month, y = count)) +
+  geom_point() +
+  theme_bw() + 
+  xlab(label = "Date") +
+  ylab(label = "Article Count") +
+  ggtitle(label = "Coverage of John Mearsheimer")
+```
+
+
+### More resources
+
+The documentation for httr includes two useful vignettes:
+
+1. [httr quickstart guide](https://cran.r-project.org/web/packages/httr/vignettes/quickstart.html) - summarizes all the basic httr functions like above
+2. [Best practices for writing an API package](https://cran.r-project.org/web/packages/httr/vignettes/api-packages.html) - document outlining the key issues involved in writing API wrappers in R
+

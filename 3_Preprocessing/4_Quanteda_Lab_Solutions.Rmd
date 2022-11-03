@@ -1,0 +1,215 @@
+---
+title: "Quanteda Overview"
+author: "Ari Weil"
+date: '2022-10-13'
+output: html_document
+---
+
+# Quanteda For Structuring Texts
+
+In lab this week, we are exploring how we will structure texts for analysis by focusing on how the `Quanteda` package in `R` implements our text-as-data preprocessing steps.
+
+Our goal is to understand the attributes of the three main Quanteda object types (corpus, tokens, and DFM), and how we use them.
+
+This brief document focuses on the top level of those objects. The [preprocessing demo worksheet](https://github.com/rochelleterman/TAD-F22/blob/main/3_Preprocessing/2_Preprocessing_Demo.Rmd) goes in depth and covers many of the Quanteda functions you'll use to interact with these objects. That document should serve as a key reference guide for you for the rest of the class; it is a great way to lookup certain functions or remind yourself of the preprocessing steps and workflow.
+
+```{r message=F}
+# quanteda stuff
+require(quanteda)
+require(quanteda.textmodels)
+require(quanteda.textstats)
+require(quanteda.textplots)
+require(quanteda.corpora)
+
+# other stuff
+require(readtext)
+require(devtools)
+require(tidyverse) # Data preparation and pipes %>%
+require(ggplot2) # For plotting word frequencies
+```
+
+# Overview of Main Data Types
+
+There are three primary data types in Quanteda:
+
+1.  Corpus
+
+2.  Tokens
+
+3.  Document-Feature Matrix
+
+See [this flowchart from Quanteda](https://tutorials.quanteda.io/basic-operations/workflow/) for a look at how these three types fit into our text analysis workflow.
+
+## Corpus
+
+A Quanteda corpus is a special object class. It contains UTF-8 encoded plaintext of your text, along with both document- and corpus-level metadata. The text is stored as one character string.
+
+The corpus should serve as your 'original copy' of the text. From there, you can tokenize and preprocess, but the corpus remains as the original reference.
+
+```{r Generate Corpus}
+
+# Load UN General Debate Speeches 2017 corpus
+corp_un <- data_corpus_ungd2017
+
+# Check class of corpus object
+class(corp_un)
+
+# Print first bit of one speech to see how text is stored
+as.character(corp_un)[1] %>% str_sub(1, 868)
+
+# Summarize corpus, but only print out summary for the first five documents
+summary(corp_un, n = 5)
+
+```
+
+## Tokens
+
+When we tokenize in Quanteda, we create a list (or a large tokens element). The elements of the list are character vectors for each document. Each character vector contains individual strings for each token (typically words) in your text. By default, `tokens()` splits on word, but you can alternatively select `"character"` or `"sentence"`.
+
+Word position is still preserved in a tokens object, because we do not get rid of word order until we create our document-feature matrix.
+
+```{r toks}
+
+# Create tokens object
+toks_un <- tokens(corp_un, split_hyphens = T)
+
+# Check its class
+class(toks_un)
+
+# Look at the first two vectors. 
+# See how text is structured and word order is preserved
+head(toks_un[1:2])
+
+```
+
+As we saw in the in-class demo, `tokens()` is where we implement our text cleaning steps. After tokenizing, we can choose from many options: removing punctuation/numbers, converting to lowercase, removing stop words, and stemming or lemmatizing.
+
+```{r toks recipe}
+
+# Let's implement all our preprocessing steps
+toks_un_final <- corp_un %>%
+  tokens(
+    split_hyphens = T,
+    remove_punct = TRUE,
+    remove_numbers = TRUE,
+    remove_symbols = TRUE
+  ) %>%
+  tokens_tolower(keep_acronyms = F) %>%
+  tokens_remove(pattern = stopwords("en")) %>%
+  tokens_wordstem()
+
+```
+
+## Document-Feature Matrix (DFM)
+
+A DFM is a special class of object in Quanteda. It generates our key NxP matrix, with N (\# documents) rows and P (\# of features) columns. Each cell value is the number of times that feature (word) appears in that specific document. Here we are fully implementing our bag-of-words assumption and getting rid of word order.
+
+```{r DFM}
+
+# Create dfm
+dfm_un <- dfm(toks_un_final)
+
+# Check dimensions
+ndoc(dfm_un) # N (number of docs)
+nfeat(dfm_un) # P (number of features/words)
+
+```
+
+# Practice Questions
+
+Remember, always check the documentation! Quanteda has a helpful list of functions on their [website](https://quanteda.io/reference/). 
+
+## Corpus
+
+### Which country had the longest speech?
+
+```{r}
+
+# Save summary statistics from the corpus
+un_summ <- summary(corp_un) %>% as.data.frame()
+
+# Now that it's a df, we can use our tidyverse data tools to organize
+# Arrange by tokens, and take top 5
+un_summ %>% 
+  slice_max(Tokens, n = 5)
+
+```
+
+### Plot GDP vs. Speech Length
+
+```{r, warning = FALSE, message = FALSE}
+
+# Use geom_point for scatterplot, and fit a linear regression with stat_smooth
+ggplot(data= un_summ, aes(x = gdp_per_capita, y = Tokens)) + 
+  geom_point() + 
+  stat_smooth(method = "lm") +
+  theme_minimal()
+
+```
+
+## Tokens
+
+### Generate bigrams
+
+Take a look at the bigrams to see the pattern. Imagine a moving window going across the terms. So if we had "apples, bananas, oranges, pears", our bigrams would be "apples_bananas, bananas_oranges, oranges_pears".
+
+```{r}
+
+# Same preprocessing as above, just adding the tokens_ngrams() function
+toks_un_bigram <- corp_un %>%
+  tokens(
+    split_hyphens = T,
+    remove_punct = TRUE,
+    remove_numbers = TRUE,
+    remove_symbols = TRUE
+  ) %>%
+  tokens_tolower(keep_acronyms = F) %>%
+  tokens_remove(pattern = stopwords("en")) %>%
+  tokens_wordstem() %>% 
+    tokens_ngrams(n = 2)
+
+# Look at the pattern, compare to unigrams earlier
+head(toks_un_bigram[1:2])
+
+```
+
+## DFM
+
+### What are the most commonly used terms?
+
+There are several ways to do this. In our NxP matrix, the sum of each column tells us how frequently that term appeared across all documents, so we could compare `colsums()` to find the largest. Quanteda also has a great built-in function, `topfeatures()`, that provides us with the most common terms. 
+
+```{r}
+
+# Top features allows us to look at the most common types in the dfm
+topfeatures(dfm_un, 20)
+
+# Let's plot them
+dfm_un %>% 
+  textstat_frequency(n = 20) %>% 
+  ggplot(aes(x = reorder(feature, frequency), y = frequency)) +
+  geom_point() +
+  coord_flip() +
+  labs(x = NULL, y = "Frequency") +
+  theme_minimal()
+
+```
+
+### What are the least commonly used terms?
+
+```{r}
+
+# Set decreasing to false to see the least common terms
+topfeatures(dfm_un, 20, decreasing = F)
+
+```
+
+### What are the most common bigrams?
+
+```{r bigram frequency}
+
+# Just create a dfm using our bigrams, and pass that to top features
+dfm(toks_un_bigram) %>% 
+  topfeatures(20)
+
+```

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Web APIs</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="PLSC 21510/31510" />
+    <script src="libs/header-attrs-2.16/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies-fonts.css" rel="stylesheet" />
+    <link rel="stylesheet" href="libs/rt.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Web APIs
+### PLSC 21510/31510
+### Fall 2022
+
+---
+
+## What is an API?
+
+
+* API stands for .accent[Application Programming Interface]
+
+* a set of rules and procedures that facilitate interactions between computers and their applications
+
+---
+## Web APIs
+
+* allows users to query a remote database over the internet
+
+* take on a variety of formats 
+
+* majority adhere to a particular style known as .accent[Representational State Transfet] or .accent[REST]
+
+* with .accent[RESTful APIs], we query databases using special URLs 
+
+
+---
+## RESTful Web APIs are All Around You...
+
+Consider a simple Google search.
+
+&lt;img src="img/google_link.png" width="2097" /&gt;
+
+Ever wonder what all that extra stuff in the address bar was all about?  
+
+---
+## RESTful Web APIs are All Around You...
+
+It looks like Google makes its query by taking the search terms, separating each of them with a "`+`", and appending them to the link:
+
+`https://www.google.com/#q=`
+
+So that we have
+
+`https://www.google.com/#q=search1+search2`
+
+So can change our Google search by adding some terms to the URL.
+
+---
+## Some Basic Terminology: URL
+
+* .accent[Uniform Resource Location]
+
+* a string of characters that, when interpreted via the .accent[Hypertext Transfer Protocol (HTTP)]
+
+* points to a data resource, notably files written in .accent[Hypertext Markup Language (HTML)] or a subset of a database.
+
+---
+## Some Basic Terminology: HTTP Methods / Verbs
+
+* .accent[GET]: asks for data corresponding to a particular URL. The  main method used for querying RESTful databases.
+
+* .accent[GET request]: The process of executing the GET method.
+    
+* .accent[HEAD, POST, PUT, DELETE]: other common methods, though mostly never used for database querying (ignore them).
+
+---
+## How Do GET Requests Work?  A Web Browsing Analogy
+
+* Surfing the Web = Making a bunch of GET Requests
+
+* For instance, I open my web browser and type in http://www.wikipedia.org.  Once I hit return, I'd see a webpage.
+
+* Several different processes occurred, however, between me hitting "return" and the page finally being rendered. 
+
+---
+## Step 1: The GET Request
+
+* web browser took the entered character string 
+
+* used the command-line tool "Curl" to write a properly formatted HTTP GET request 
+
+* submitted it to the server that hosts the Wikipedia homepage.
+
+---
+## STEP 2: The Response
+
+* Wikipedia's server receives this request
+
+* send back an HTTP response
+
+* from which Curl extracted the HTML code for the page
+
+
+```html
+"&lt;!DOCTYPE html&gt;\n&lt;html lang=\"mul\" dir=\"ltr\"&gt;\n&lt;head&gt;\n&lt;!-- Sysops: 
+Please do not edit the main template directly; update /temp and synchronise. 
+--&gt;\n&lt;meta charset=\"utf-8\"&gt;\n&lt;title&gt;Wikipedia&lt;/title&gt;\n&lt;!--[if lt IE 7]&gt;&lt;meta
+http-equiv=\"imagetoolbar\" content=\"no\"&gt;&lt;![endif]--&gt;\n&lt;meta name=\"viewport\"
+content=\"i"
+```
+
+---
+## STEP 3: The Formatting
+
+* raw HTML code was formatted and executed by the web browser
+
+* rendering the page as seen in the window.
+
+&lt;img src="img/wikipedia.png" width="3717" /&gt;
+
+---
+## RESTful Database Querying: The GET Request
+
+* URL we supply must be constructed so that the resulting request can be interpreted and successfully acted upon by the server.  
+
+* Likely that the character string must encode .accent[search terms] and/or .accent[filtering parameters], as well as one or more .accent[authentication codes].  
+
+* While the terms are often similar across APIs, most are API-specific.
+
+---
+## RESTful Database Querying: The Response
+
+* unlike web browsing, the content of the server's response that is extracted by Curl is unlikely to be HTML code. 
+
+* will likely be **raw text** response that can be parsed into one of a few file formats commonly used for data storage.  
+
+* usual suspects include `.csv`, `.xml`, and `.json` files.
+
+---
+## RESTful Database Querying: The Formatting
+
+* web browser parsed the HTML code, 
+
+* but **we need R, Python, or other programming languages** to parse the server response 
+
+* and convert it into a format for local storage (e.g. matrices, dataframes, databases, lists, etc.).
+
+---
+## Getting API Access
+
+* For most APIs, a .accent[key] or other user .accent[credentials] are required
+* Most APIs are set up for developers, so you’ll likely be asked to register an "application"
+* rate limits = total number of calls / time
+
+#### NYT Article API
+  - 10 calls per minute and 4,000 calls per day 
+  - You should sleep 6 seconds between calls to avoid hitting the per minute rate limit.
+  - Get an NYT API key here: https://developer.nytimes.com/get-started
+  - Read documentation here: https://developer.nytimes.com/docs/articlesearch-product/1/routes/articlesearch.json/get
+
+---
+## Using APIs in R
+
+There are two ways to collect data through APIs in R.
+
+#### 1. Plug-n-play packages
+
+- Common APIs are available through user-written R Packages. 
+- functions that "wrap" API queries and format the response. 
+- usually much more convenient than writing our own query, so it's worth searching around for a package that works with the API we need.
+
+#### 2. Writing our own API request
+
+- If no wrapper function is available, we have to write our own API request, and format the response ourselves using R. 
+- This is trickier, but definitely do-able.
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Preprocessing Texts</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="PLSC 21510/31510" />
+    <script src="libs/header-attrs-2.16/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies-fonts.css" rel="stylesheet" />
+    <link rel="stylesheet" href="libs/rt.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Preprocessing Texts
+### PLSC 21510/31510
+### Fall 2022
+
+---
+
+
+
+
+
+
+
+## Preprocessing
+
+#### Goal 
+Prepare texts into format used for computational text analysis. 
+
+#### Method 
+Preprocessing recipe.
+
+#### Decisions 
+Feature selection, Non-english and multilingual issues.
+
+---
+### Preprocessing
+
+.pull-left[
+#### Key Terms:
+
+- Corpus / document 
+- Encoding
+- Preprocessing
+- Tokens
+- N-grams
+- Stemming
+- Lemmatization 
+- Bag of Words
+- Document-Term Matrix
+- Sparseness
+]
+
+.pull-right[
+#### Key R Packages
+- `quanteda`
+]
+
+
+---
+### Preparing a corpus
+
+A .accent[corpus] (pl: .accent[corpora]) is a collection of texts, usually stored electronically, and from which we perform our analysis. 
+
+- A corpus might be a collection of news articles from Reuters or the published works of Shakespeare.
+
+&lt;br /&gt;
+
+--
+Within each corpus we will have separate articles, stories, volumes, each treated as a separate entity or record. Each unit is called a .accent[document] 
+
+- What defines a document will vary depending on the research context.
+
+
+---
+### Digitization
+
+#### Goal: machine readable text
+
+* Store corpus as plain text (e.g. `.txt`, `.csv`), removing unnecessary formatting.
+
+--
+* Plain text is .accent[encoded] in different ways. .red[`UTF-8`] is best. 
+
+--
+* Leave Excel behind.
+
+--
+* Corpora have .accent[data] (the text) and .accent[metadata] (e.g. author, date, publication)
+
+--
+* Directory of `.txt`’s or a "tidy" dataset.
+
+
+
+???
+
+The same character can be encoded in multiple ways, and default encodings vary across computers and operating systems. For instance, UTF-8 encodes each character using as little as 8 bits of memory, whereas UTF-16 uses at little as 16 bits. Both methods of encoding are variable, meaning they use smaller or larger amounts of memory as needed to store a character. As an example, the character `A` is encoded in UTF-8 as 01000001 and in UTF-16 as 0000000001000001.
+
+CSVs can be tricky, because text data often contain commas and line breaks that introduce parsing er-rors. In our experience, Excel does not handle text-heavy CSVs properly. We recommend that research-ers limit their interaction with corpus-CSVs to R or plain-text editors.
+
+---
+### Storing and structuring a corpus
+
+My preferred structure: Each document a row, one column for text, and other columns for metadata. 
+
+Save this table as a delimited plain text file, such as comma separated values.
+
+.scriptsize[
+| UID | date | author | title | text |
+|---|---|---|---|---|
+| 1 | 19-10-2020 | Chris Morris | What does 'no-deal' Australia-style Brexit mean? | Remember how this time last year we were talking about a no-deal Brexit? Well, it's back….Remember how this time last year we were talking about a no-deal Brexit? Well, it's back…. |
+| 2 | 08-10-2020 | Andrew Walker | WTO to name first female boss as shortlist narrows | The selection of a new director general of the World Trade Organisation (WTO) is entering its final stage…. |
+| 3 | 17-07-2020 | Nicholas Watt | Coronavirus to cause 'nightmare' economic crisis | Coronavirus will lead to a worldwide economic downturn somewhere between a "bad dream and worst nightmare", former cabinet minister Liam Fox has warned… |
+]
+
+---
+### Preprocessing texts
+
+#### One (of many) recipe for preprocessing: retain useful information
+
+--
+1. Remove capitalization, punctuation, numbers
+
+--
+2. Discard Word Order: (**Bag of Words** Assumption)
+
+--
+3. Discard stop words
+
+--
+4. Combine similar terms: Stem, Lemmatize
+
+--
+5. **Output**: Document-Term Matrix, each element counts occurrence of a particular term in a particular document
+
+---
+### 1. Remove capitalization, punctuation, numbers
+
+.accent[Assumption:] Capitalization, punctuation do not provide useful information.
+
+--
+.content-box-blue[
+`Now we are engaged in a great civil war, testing whether
+that nation, or any nation`]
+
+--
+.content-box-yellow[
+`now we are engaged in a great civil war testing whether
+that nation or any nation`]
+
+--
+#### Caution!
+`Turkey` = `turkey`
+
+---
+### 2. Discard Word Order (Bag of Words) `\(\leadsto\)` Tokenization
+
+.accent[Assumption:] Word order doesn't matter.
+
+--
+.content-box-blue[
+`now we are engaged in a great civil war testing whether
+that nation or any nation`]
+
+--
+.content-box-yellow[
+`[now, we, are, engaged, in, a, great, civil, war, testing, whether, that, nation, or, any, nation]`]
+
+--
+.content-box-yellow[
+`[a, any, are, civil, engaged, great, in, nation, nation, now, or,
+testing, that, war, we, whether]`]
+
+--
+#### Tokenization
+
+
+---
+### Tokenization
+
+**Unigrams**: `[now, we, are, engaged, in, a, great, civil, war, testing, whether, that, nation, or, any, nation]`  
+&lt;br&gt;
+
+
+--
+**Bigrams**: `[now we, we are, are engaged, engaged in, in a, a great, great civil, civil war, war testing, testing whether, whether that, that nation, nation or, or any, any nation]`  
+&lt;br&gt;
+
+
+--
+**Trigrams**: `[now we are, we are engaged, are engaged in, engaged in a, in a great, a great civil, great civil war, civil war testing, war testing whether, testing whether that, whether that nation, that nation or, nation or any, or any nation]`
+
+
+---
+### How Could This Possibly Work?
+
+Speech is: 
+
+- Ironic  
+    *`Thanks, Obama`*
+    
+- Subtle Negation (Source: Janyce Wiebe):  
+    *`They have not succeeded, and will never succeed, in breaking the will of this valiant people`*
+    
+- Order Dependent (Source: Arthur Spirling):  
+    *`Peace, no more war; War, no more peace`*
+    
+---
+### How Could This Possibly Work?
+
+Three answers:
+
+
+--
+1. **It might not**: Validation is critical (task specific)  
+
+
+--
+2. **Central Tendency in Text**: Words often imply what a text is about:  
+  `war, civil, union, consecrate, dead, died, lives.`  
+  Likely to be used repeatedly `\(\leadsto\)` create a theme for an article  
+  
+
+--
+3. **Proof in the pudding**: Bag-of-words assumption works for a number of applications.
+
+
+---
+### 3. Discard stop words
+
+.accent[Assumption:] Stop words don't add useful information.  
+&lt;br&gt;
+
+--
+**Stop Words**: English Language place holding words:
+
+- `the, it, if, a, able, at, be, because...`
+- Add "noise" to documents (without conveying much information)
+- Discard stop words: focus on *substantive* words
+
+
+--
+**Note of Caution**: Monroe, Colaresi, and Quinn (2008)
+- `she, he, her, his`
+- Many English language stop lists include gender pronouns
+- You may need to customize your stop word list: abbreviations, titles, etc.
+
+
+---
+### 4. Combine similar terms
+
+Reduce dimensionality further `\(\leadsto\)` combine similar terms (tense and number).
+
+- Words used to refer to same basic concept:  
+`family, families, familial, famili`
+- **Stemming/Lemmatizing algorithm**s: Many-to-one mapping from
+words to stem/lemma
+
+---
+### Comparing Stemming and Lemmatizing
+
+#### Stemming algorithm:
+- Simplistic algorithms
+- Chop off end of word
+- Porter stemmer, Lancaster stemmer, Snowball stemmer
+
+#### Lemmatizing algorithm:
+- Condition on part of speech (noun, verb, etc) 
+- Verify result is a word
+
+
+---
+### Other common steps
+
+- Remove sparse terms (rare words)
+- Remove other terms (e.g. proper nouns).
+- Weight some terms more than others (tf-idf)
+
+
+---
+### All together now
+
+.content-box-blue[
+`Now we are engaged in a great civil war, testing whether that nation, or any nation.`]
+
+
+--
+#### Step 1: Remove capitalization and punctuation:
+
+--
+.content-box-yellow[
+`now we are engaged in a great civil war testing whether that nation or any nation`]
+
+---
+### All together now
+
+.content-box-blue[
+`now we are engaged in a great civil war testing whether that nation or any nation`]
+
+
+--
+#### Step 2: Tokenize
+
+--
+.content-box-yellow[
+`[a, any, are, civil, engaged, great, in, nation, nation, now, or, testing, that, war, we, whether]`]
+
+
+---
+### All together now
+
+.content-box-blue[
+`[a, any, are, civil, engaged, great, in, nation, nation, now, or, testing, that, war, we, whether]`]
+
+
+--
+#### Step 3: Remove stop words:
+
+--
+.content-box-yellow[
+`[civil, engaged, great, nation, nation, now, testing, war,  whether]`]
+
+
+---
+### All together now
+
+.content-box-blue[
+`[civil, engaged, great, nation, nation, now, testing, war, whether]`]
+
+
+--
+#### Step 4: Applying Stemming Algorithm
+
+--
+.content-box-yellow[
+`[civil, engag, great, nation, nation, now, test, war, whether]`]
+
+---
+### All together now
+
+.content-box-blue[
+`[civil, engag, great, nation, nation, now, test, war, whether]`]
+
+
+--
+#### Step 5: Create Count Vector
+
+
+--
+
+| Stem | Count |
+|---|---|
+| civil | 1 |
+| engag | 1 |
+| nation | 2 |
+| now | 1 |
+| test | 1 |
+| war | 1 |
+| whether | 1 |
+| .   .   . | .   .   .   |
+
+---
+### Document-Term Matrix 
+
+|          | **Word1** | **Word2** | **Word3** | `\(\dots\)` | **WordP** |
+|----------|-----------|-----------|-----------|--------------|-----------|
+| Doc1     | 1         | 0         | 0         | `\(\dots\)`     | 3         |
+| Doc2     | 0         | 2         | 1         | `\(\dots\)`     | 0         |
+| `\(\vdots\)` | `\(\vdots\)`  | `\(\vdots\)`  | `\(\vdots\)`  | `\(\ddots\)`     |
+| DocN     | 0         | 0         | 0         | `\(\dots\)`     | 5         |
+
+&lt;br&gt;
+
+--
+`\(\boldsymbol{X} = {N} \times{P}\)` matrix 
+
+- `\({N} =\)`  Number of documents 
+- `\({P} =\)`  Number of features  
+- `\(\boldsymbol{x}_{i}  = (x_{i1}, x_{i2}, \dots, x_{iP})\)`  
+
+
+--
+`\(\boldsymbol{X} =\)` .accent[main input for many computational text analysis applications.] 
+
+---
+### Pop Quiz: Notation
+
+What do the following terms define?
+
+  - `\(P\)` 
+  
+  
+  - `\(N\)`
+  
+
+  - `\(\boldsymbol{x}_{i}\)` when `\(i = 2\)`
+
+
+  - `\(x_{ip}\)` when `\(i = 2\)` and `\(p = 2\)`
+
+
+  - `\(\sum_{p=1}^{P} x_{ip}\)` when `\(i = 3\)`
+
+
+  - `\(\sum_{i=1}^{N} x_{ip}\)`
+
+
+  - `\(\sum_{i=1}^{N} \sum_{p=1}^{P} x_{ip}\)`
+
+
+
+
+---
+class: center, middle, inverse, title-slide
+
+## Non-English and Multi-language Issues
+
+---
+### Non-English and Multi-language Issues
+
+#### Challenges:
+- **Tokenization**: Some languages, like Chinese, Japanese, and Lao, do not have spaces between words and cannot be parsed into individual units.
+- **Stop words**: Each language has its own list of stop words.
+- **Stemming/Lemmatization**: Not all languages require stemming (Chinese), and others require more complex lemmatization (Hungarian).
+
+
+--
+#### Solutions
+1. Language-specific processing and software.
+2. Translate everything into English or other common language (e.g., Google Translate), especially if doing cross-language work.
+
+---
+### Example: Persian (Farsi) 
+
+Persian characters are defined by unicode.
+
+
+```r
+# entering farsi characters
+letters_fa &lt;- c('الف','ب','پ','ت','ث','ج','چ','ح','خ','ر','ز','د')
+letters_fa
+#&gt;  [1] "الف" "ب"   "پ"   "ت"   "ث"   "ج"   "چ"   "ح"   "خ"   "ر"   "ز"   "د"
+
+# str_c works the same
+combined_fa &lt;- str_c(letters_fa, collapse = "")
+combined_fa
+#&gt; [1] "الفبپتثجچحخرزد"
+
+# but it's unicode under the hood
+Unicode::as.u_char(utf8ToInt(combined_fa))
+#&gt;  [1] U+0627 U+0644 U+0641 U+0628 U+067E U+062A U+062B U+062C U+0686 U+062D
+#&gt; [11] U+062E U+0631 U+0632 U+062F
+```
+
+---
+### Example: Persian (Farsi) 
+
+A lot of quanteda functions will work!
+
+
+
+
+```r
+# some farsi text
+str_sub(farsi, 1, 50)
+#&gt; [1] "آشنایی با دانشگاه تهران - تاریخچه - افتخارات عظیم "
+
+# tokenizing with quanteda
+farsi_tokens &lt;- tokens(farsi, remove_punct = TRUE)
+farsi_tokens &lt;- tokens_remove(farsi_tokens, 
+                          stopwords::stopwords(language = "fa", source = "stopwords-iso"))
+head(farsi_tokens[[1]])
+#&gt; [1] "آشنایی"   "دانشگاه"  "تهران"    "تاریخچه"  "افتخارات" "عظیم"
+```
+
+---
+### Example: Persian (Farsi) 
+
+But some will not...
+
+
+```r
+# stemming with quanteda
+SnowballC::getStemLanguages()
+#&gt;  [1] "arabic"     "basque"     "catalan"    "danish"     "dutch"     
+#&gt;  [6] "english"    "finnish"    "french"     "german"     "greek"     
+#&gt; [11] "hindi"      "hungarian"  "indonesian" "irish"      "italian"   
+#&gt; [16] "lithuanian" "nepali"     "norwegian"  "porter"     "portuguese"
+#&gt; [21] "romanian"   "russian"    "spanish"    "swedish"    "tamil"     
+#&gt; [26] "turkish"
+```
+
+---
+### Example: Persian (Farsi) 
+
+
+```r
+# tokenizing/stemming with custom package
+farsi_stems &lt;- PerStem(farsi, NoEnglish=TRUE, NoNumbers= TRUE, 
+                    NoStopwords=TRUE, NoPunctuation= TRUE,
+                    StemVerbs = TRUE, NoPreSuffix= TRUE, Context = TRUE,
+                    StemBrokenPlurals=TRUE, Transliteration= F)
+str_sub(farsi_stems, 1, 50)
+#&gt; [1] "آشنایی دانشگاه تهران تاریخچه افتخارات عظیم باشکوه "
+
+# compare with original
+str_sub(farsi, 1, 50)
+#&gt; [1] "آشنایی با دانشگاه تهران - تاریخچه - افتخارات عظیم "
+```
+
+---
+### Example: Chinese 
+
+In Chinese,  each "word" can be represented by one or more consecutive characters. Splitting Chinese text into words is called "word segmentation" and is still an active area of research.
+
+
+```r
+words &lt;- c("下面是不分行输出的结果", "下面是不输出的结果")
+```
+
+.pull-left[
+
+```r
+# with quanteda
+tokens(words)
+#&gt; Tokens consisting of 2 documents.
+#&gt; text1 :
+#&gt; [1] "下面" "是不" "分行" "输出" "的"   "结果"
+#&gt; 
+#&gt; text2 :
+#&gt; [1] "下面" "是不" "输出" "的"   "结果"
+```
+]
+
+.pull-right[
+
+```r
+# with jeibaR
+require(jiebaR)
+#&gt; Loading required package: jiebaR
+#&gt; Loading required package: jiebaRD
+engine1 &lt;- worker(bylines = TRUE)
+segment(words, engine1)
+#&gt; [[1]]
+#&gt; [1] "下面" "是"   "不"   "分行" "输出" "的"   "结果"
+#&gt; 
+#&gt; [[2]]
+#&gt; [1] "下面" "是"   "不"   "输出" "的"   "结果"
+```
+]
+
+---
+class: center, middle, inverse, title-slide
+
+## Preprocessing Choices
+
+---
+### Preprocessing Choices (Denny &amp; Spirling)
+
+Possible steps:
+  - **P**: Punctuation
+  - **N**: Numbers
+  - **L**: Lowercasing
+  - **S**: Stemming
+  - **W**: Stopword removal
+  - **3**: n-gram inclusions (unigrams, bigrams, trigrams, etc)
+  - **I**: Infrequent term removal (rule of thumb: remove terms in &lt; 0.5-1% of documents) 
+
+
+--
+`\(\leadsto 2^7 = 128\)` different combinations.
+
+---
+### Preprocessing Choices (Denny &amp; Spirling)
+
+&lt;/br&gt;
+
+| ARTICLE | STEPS | CITATIONS |
+|---|---|---|
+| Slapin and Proksch (2008) | P-S-L-N-W | 427 |
+| Grimmer (2010) | L-P-S-I-W | 258 |
+| Quinn et al (2010) | P-L-S-I | 275 |
+| Grimmer and King (2011) | L-P-S-I | 109 |
+| Roberts et al (2014) | P-L-S-W | 117 |
+
+---
+### How do we decide? (Denny &amp; Spirling)
+
+.middle[
+1. Theory-driven choices
+2. Robustness
+]
+
+---
+### How do we decide? (Denny &amp; Spirling)
+
+1. Theory-driven choices
+2. **Robustness**: Different preprocessing choices `\(\leadsto\)` similar results.
+
+
+---
+### Basic intuition (Denny &amp; Spirling)
+
+`\(\boldsymbol{X} = doc_1, doc_2, doc_3\)`
+
+
+--
+Let `\({d}(1, 2) =\)` "distance" (i.e., dissimilarity) between documents 1 and 2. 
+
+
+--
+.pull-left[
+#### No preprocessing: 
+- `\({d}(1, 2) = 1\)`
+- `\({d}(1, 3) = 3\)`
+- `\({d}(2, 3) = 2\)`
+]
+
+
+--
+.pull-right[
+#### Remove stop words:
+- `\({d}(1, 2) = 2\)`
+- `\({d}(1, 3) = 6\)`
+- `\({d}(2, 3) = 4\)`
+]
+
+
+--
+&lt;/br&gt;
+In both, `\({d}(1, 3) &gt; {d}(2, 3) &gt; {d}(1, 2)\)`
+
+
+---
+### Basic intuition (Denny &amp; Spirling)
+
+`\(\boldsymbol{X} = doc_1, doc_2, doc_3\)`
+
+
+Let `\({d}(1, 2) =\)` "distance" (i.e., dissimilarity) between documents 1 and 2. 
+
+
+.pull-left[
+#### No preprocessing: 
+- `\({d}(1, 2) = 1\)`
+- `\({d}(1, 3) = 3\)`
+- `\({d}(2, 3) = 2\)`
+]
+
+
+--
+.pull-right[
+#### Stem words:
+- `\({d}(1, 2) = 4\)`
+- `\({d}(1, 3) = 1\)`
+- `\({d}(2, 3) = 6\)`
+]
+
+
+--
+&lt;/br&gt;
+Different ranked order: `\({d}(2, 3) &gt; {d}(1, 2) &gt; {d}(1, 3)\)`
+
+
+--
+&lt;/br&gt;
+.accent[More pairwise distances changes] `\(\leadsto\)` less stability in results.
+
+
+---
+### `preText` scores (Denny &amp; Spirling)
+
+Average pairwise distance changes for a particular preprocessing combination
+  - lower scores: more "usual" specification
+  - higher scores: more "unusual"
+  
+
+--
+$$
+`\begin{aligned}
+  \tt{preText score}_i = &amp; \beta_{0} +  \\
+    &amp; \beta_{1}\text{Punctuation}_i + \\
+    &amp; \beta_{3}\text{Numbers}_i + \\
+    &amp; \beta_{3}\text{Lowercase}_i + \\
+    &amp; \beta_{4}\text{Stem}_i + \\
+    &amp; \beta_{5}\text{Stop Words}_i + \\
+    &amp; \beta_{6}\text{N-Grams}_i + \\
+    &amp; \beta_{7}\text{Infrequent Terms}_i + \epsilon_i
+\end{aligned}`
+$$
+--
+
+1. **All Parameter Estimates Are Not Significantly Different From Zero**: proceed.
+2. **Some Parameter Estimates Are Significantly Different From Zero**: replicate across combinations.
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

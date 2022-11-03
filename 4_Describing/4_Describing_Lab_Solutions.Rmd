@@ -1,0 +1,212 @@
+---
+title: "3_Describing_Lab.Rmd"
+author: "Ari Weil"
+date: '2022-10-19'
+output: html_document
+---
+
+# Overview
+
+For lab this week, we will be practicing basic descriptive analysis with Quanteda. Well focus on two skills: 1) how to conduct exploratory analysis by grouping on variables of interest, and 2) how to plot our results. We'll use a running example of Taylor Swift's song lyrics. 
+
+Some of this material has been remixed from the [quanteda visualization vignette ](https://quanteda.io/articles/pkgdown/examples/plotting.html)
+
+Agenda:
+
+1. Word frequency
+2. Plotting term locations
+3. Lexical diversity
+4. Readability
+
+# Setup
+
+First we load our packages
+
+```{r message=F}
+# quanteda stuff
+require(quanteda)
+require(quanteda.textmodels)
+require(quanteda.textstats)
+require(quanteda.textplots)
+require(quanteda.corpora)
+
+# other stuff
+require(readtext)
+require(devtools)
+require(tidyverse) # Data preparation and pipes %>%
+require(ggplot2) # For plotting word frequencies
+library(tidytext) # for ordering our faceting ggplots
+```
+
+Let's read in our data and make a corpus
+
+
+```{r}
+
+# Read in data
+ts <- read.csv("./data/taylor_swift.csv")
+
+# Create corpus object
+corp_ts <- corpus(ts, text_field = "lyrics", docid_field = "track_title")
+
+```
+
+Then make a token list, and clean and preprocess the data into a document-term matrix.
+
+```{r}
+
+# Tokenize and preprocess data
+toks_ts <- corp_ts %>%
+  tokens(split_hyphens = TRUE,
+         remove_punct = TRUE,
+         remove_numbers = TRUE,
+         remove_symbols = TRUE) %>%
+  tokens_tolower() %>% 
+  tokens_remove(pattern = stopwords("en")) 
+
+# Generate dfm
+dfm_ts <- dfm(toks_ts)
+
+```
+
+# Word Frequency
+
+What are the most frequent ten terms overall?
+
+```{r}
+
+textstat_frequency(dfm_ts, n = 10)
+
+```
+
+What about the most frequent terms, by album?
+
+```{r}
+
+topfeatures(dfm_ts, n = 10, groups = album)
+
+textstat_frequency(dfm_ts, n = 10, groups = album)
+
+```
+
+## Plotting
+
+Let's plot the top 10 words in ggplot.
+
+```{r}
+
+# We can pass the results of textstat_frequency
+  # to ggplot to easily plot word counts 
+textstat_frequency(dfm_ts, n = 10) %>% 
+  ggplot(aes(x = reorder(feature, frequency), y = frequency)) + 
+  geom_point() +
+  coord_flip() + 
+  labs(title = "Top Terms in Swift Lyrics", x = NULL, y = "Frequency") + 
+  theme_minimal()
+
+```
+
+Alternatively, we could plot the top terms by group. Here, we're going to use ggplot's faceting to make a smaller plot for each album.
+
+```{r}
+
+
+textstat_frequency(dfm_ts, n = 10, groups = album) %>% 
+  # Use reorder_within from tidytext to get our dots ordered nicely
+  ggplot(aes(x = reorder_within(feature, frequency, group), y = frequency)) + 
+  geom_point() +
+  # Create separate chart for each album
+  facet_wrap(~ group, scales = "free") +
+  # Correct reorder_within's labeleing
+  scale_x_reordered() +
+  coord_flip() + 
+  labs(title = "Top Terms by Album", x = NULL, y = "Frequency") + 
+  theme_minimal()
+
+```
+
+Lastly, we can compare the prevalence of one term across speakers or documents. Here, let's compare one term across albums. 
+
+```{r}
+
+# First we calculate frequency by album
+textstat_frequency(dfm_ts, groups = album) %>% 
+  # then filter by our term of interest
+  filter(feature == "love") %>% 
+  ggplot(aes(x = group, y = frequency)) + 
+  geom_point() +
+  scale_y_continuous(limits = c(0, 70), breaks = c(seq(0, 70, 10)))+ 
+  labs(title = "Frequency of Love Across Swift Songs", x = NULL, y = "Frequency") +
+  theme_minimal()
+
+```
+
+# Keywords in Context
+
+We can plot where certain terms appear in a text by passing a `kwic` object to `textplot_xray()`. 
+
+Calculate the kwic for love, and then plot where it appears across each album.
+
+Note: `kwic` takes in tokens, but you'll need to group them by album first!
+
+```{r}
+
+toks_album <- toks_ts %>% 
+  tokens_group(groups = album)
+
+textplot_xray(
+  kwic(toks_album, pattern = "love"),
+  kwic(toks_album, pattern = "like")
+)
+
+```
+
+# Lexical Diversity
+
+Calculate the lexical diversity of each album.
+
+```{r}
+
+# Group dfm by the album for analysis
+dfm_ts_album <- dfm_group(dfm_ts, groups = album)
+
+# Check lexical diversity
+textstat_lexdiv(dfm_ts_album)
+
+```
+
+Now plot lexical diversity over time
+
+```{r}
+
+# Save reference df of albums and years
+album_years <- docvars(dfm_ts_album)
+
+# Plot lexical diversity over time
+textstat_lexdiv(dfm_ts_album) %>% 
+  left_join(album_years, by = c("document" = "album")) %>% 
+  mutate(date = lubridate::ymd(year, truncated = 2L)) %>% 
+  ggplot(aes(x = date, y = TTR, label = document)) +
+  geom_label() +
+  theme_minimal()
+
+```
+
+# Readability
+
+Calculate the FRE by album of Swift's lyrics.
+
+```{r}
+
+textstat_readability(corpus_group(corp_ts, groups = album), "Flesch")
+
+```
+
+# Final Challenge
+
+Pick one descriptive measure (collocation, readability, a different keyword in context, a different metric of frequency) and make your own visualization below:
+
+```{r}
+
+
+```

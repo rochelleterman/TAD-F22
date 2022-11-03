@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Dictionary Methods</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="PLSC 21510/31510" />
+    <script src="libs/header-attrs-2.16/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies-fonts.css" rel="stylesheet" />
+    <link rel="stylesheet" href="libs/rt.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Dictionary Methods
+### PLSC 21510/31510
+### Fall 2022
+
+---
+
+
+
+
+
+
+#### This week 
+- Dictionary methods
+- Sentiment analysis
+- Distinctive / discriminating words
+- Scaling using 'wordscores'
+
+---
+## Dictionary Methods
+
+#### Goal 
+Measure and classify expressed sentiment in texts
+
+#### Game Plan
+1. Dictionaries
+2. Applying dictionaries to text to measure sentiment
+3. Applications, interpretation, and pitfalls
+
+#### Key Terms
+
+- Dictionary
+- Sentiment analysis
+- Word weights
+
+---
+### Dictionaries
+
+.pull-left[
+- .accent[Dictionaries]: lists of words belonging to a category.
+]
+
+---
+### Dictionaries
+
+.pull-left[
+- .accent[Dictionaries]: lists of words belonging to a category.
+- .accent[Sentiment dictionaries]: Lists of words scored by some emotion or opinion content.
+]
+
+.pull-right[
+![](img/categorical.png)
+]
+
+---
+### Dictionaries
+
+.pull-left[
+- .accent[Dictionaries]: lists of words belonging to a category.
+- .accent[Sentiment dictionaries]: Lists of words scored by some emotion or opinion content.
+  - Broad sentiment (Positive, Negative)
+]
+
+.pull-right[
+![](img/binary.png)
+]
+
+---
+### Dictionaries
+
+.pull-left[
+- .accent[Dictionaries]: lists of words belonging to a category.
+- .accent[Sentiment dictionaries]: Lists of words scored by some emotion or opinion content.
+  - Broad sentiment (Positive, Negative)
+  - Specific emotion (Anger, Joy, Sadness)
+]
+
+.pull-right[
+![](img/categorical.png)
+]
+
+---
+### Dictionaries
+
+.pull-left[
+- .accent[Dictionaries]: lists of words belonging to a category.
+- .accent[Sentiment dictionaries]: Lists of words scored by some emotion or opinion content.
+  - Broad sentiment (Positive, Negative)
+  - Specific emotion (Anger, Joy, Sadness)
+  - Doesn't include all words (many are neutral)
+]
+
+.pull-right[
+![](img/categorical.png)
+]
+
+---
+### Dictionaries
+
+.pull-left[
+- .accent[Dictionaries]: lists of words belonging to a category.
+- .accent[Sentiment dictionaries]: Lists of words scored by some emotion or opinion content.
+  - Broad sentiment (Positive, Negative)
+  - Specific emotion (Anger, Joy, Sadness)
+  - Doesn't include all words (many are neutral)  
+- .accent[Word weights / scores]
+  - Binary: {Positive (+1), Negative (-1)}
+]
+
+.pull-right[
+![](img/binary.png)
+]
+
+---
+### Dictionaries
+
+.pull-left[
+- .accent[Dictionaries]: lists of words belonging to a category.
+- .accent[Sentiment dictionaries]: Lists of words scored by some emotion or opinion content.
+  - Broad sentiment (Positive, Negative)
+  - Specific emotion (Anger, Joy, Sadness)
+  - Doesn't include all words (many are neutral)  
+- .accent[Word weights / scores]
+  - Binary: {Positive (+1), Negative (-1)}
+  - Numerical: {−2,−1,1,2}
+]
+
+.pull-right[
+![](img/numerical.png)
+]
+
+---
+### Dictionaries
+
+.pull-left[
+- .accent[Dictionaries]: lists of words belonging to a category.
+- .accent[Sentiment dictionaries]: Lists of words scored by some emotion or opinion content.
+  - Broad sentiment (Positive, Negative)
+  - Specific emotion (Anger, Joy, Sadness)
+  - Doesn't include all words (many are neutral) 
+- .accent[Word weights / scores]  
+  - Binary: {Positive (+1), Negative (-1)}
+  - Numerical: {−2,−1,1,2}
+]
+
+.pull-right[
+![](img/numerical.png)
+]
+
+- .accent[Non-sentiment dictionaries]: Words about sports, food, places...
+
+---
+### Off the Shelf Dictionaries
+
+1. General Inquirer Database (http://www.wjh.harvard.edu/~inquirer/ )
+
+--
+2. Linguistic Inquiry Word Count (LIWC)
+
+--
+3. Harvard-IV-4
+
+--
+4. Affective Norms for English Words (ANEW)
+
+--
+5. Proprietary software (e.g. Diction)
+
+--
+6. Many many more...
+
+---
+### Generating Dictionaries
+
+Three ways to create dictionaries (non-exhaustive):
+
+--
+1. .accent[Statistical methods] (Distinctive / separating words, next class) 2.) 
+
+--
+2. .accent[Manual generation]
+  - Careful thought (prayer? epiphanies? divine intervention?) about useful words
+  - Ex: LIWC: "We drew on common emotion rating scales... Roget's Thesaurus...standard English dictionaries. [then] brain-storming sessions among 3-6 judges were held" to generate other words.
+
+--
+3. .accent[Crowdsourcing]: Populations of people who are surprisingly willing to perform ill-defined tasks (Undergraduates, Mechanical Turkers)
+  - Example: `{Happy, Unhappy}`
+  - Ask turkers: how happy is `elevator`, `car`, `pretty`, `young` 
+  - Output as dictionary
+
+---
+### Applying Method: Word Weights
+
+- Vector of word counts:  `\(\boldsymbol{X}_i = (X_{i1}, X_{i2}, \dots, X_{iP})\)`, `\(i = (1, \dots, N)\)` 
+
+--
+- Weights attached to words  `\(\boldsymbol{\theta} = (\theta_{1}, \theta_{2}, \dots, \theta_{P})\)`  
+
+--
+  - `\(\theta_{p} \in \{0,1\}\)`
+  - `\(\theta_{p} \in \{-1, 0, 1 \}\)` 
+  - `\(\theta_{p} \in \{-2, -1, 0, 1, 2\}\)` 
+  - `\(\theta_{p} \in \Re\)`
+
+
+--
+For each document `\(i\)` calculate score for document:  
+
+$$
+`\begin{eqnarray}
+Y_i  &amp; = &amp; \frac{\sum_{p=1}^{P} \theta_p X_{ip}}{\sum_{p=1}^{P} X_{ip}}
+\end{eqnarray}`
+$$
+
+--
+`\(Y_{i} \approx\)` continuous `\(\leadsto\)` Classification 
+
+  - `\(Y_i&gt; 0 \Rightarrow\)` Positive Category 
+  - `\(Y_i&lt; 0 \Rightarrow\)` Negative Category 
+  - `\(Y_i \approx 0\)` Ambiguous
+
+---
+### Measuring Happiness
+.pull-left[
+![](img/Bentham.jpg)
+]
+
+.pull-right[
+#### Quantifying Happiness: 
+- How happy is society?
+- How Happy is a Song?
+- Blog posts?
+- Facebook posts? (Gross National Happiness)
+
+Use .accent[Dictionary Methods]
+]
+
+---
+### Measuring Happiness
+
+Dodds and Danforth (2009): Use a dictionary method to measure happiness 
+
+
+--
+.accent[Affective Norms for English Words] (ANEW) 
+  - Bradley and Lang 1999:  1034 words, Affective reaction to words 
+  - On a scale of 1-9 how happy does this word make you? 
+  - **Happy**: `triumphant` (8.82); `paradise` (8.72); `love` (8.72) 
+  - **Neutral**: `street` (5.22); `paper` (5.20); `engine` (5.20) 
+  - **Unhappy**: `cancer` (1.5); `funeral` (1.39); `rape` (1.25); `suicide` (1.25)  
+
+
+--
+.accent[Happiness] for text `\(i\)` (with word `\(p\)` having happiness `\(\theta_p\)` and document frequency `\(X_{ip}\)`
+
+$$
+`\begin{eqnarray}
+\text{Happiness}_{i}  &amp; = &amp; \frac{ \sum_{p=1}^{P} \theta_{p} X_{ip} } { \sum_{p=1}^{P} X_{ip}}  
+\end{eqnarray}`
+$$
+
+---
+![](img/BillyJean.png)
+
+
+--
+Happiest Song on Thriller?  
+
+--
+.accent[P.Y.T. (Pretty Young Thing)]   (This is the right answer!)}
+
+---
+### Happiness in Society
+
+![](img/SongHappiness.png)
+
+---
+### Happiness in Society
+
+![](img/SongType.png)
+---
+### Happiness in Society
+
+![](img/Song-3.png)
+
+https://towardsdatascience.com/lyrics-analysis-5e1990070a4b
+
+---
+### Happiness in Society
+
+![](img/Blog.png)
+
+---
+### Visualizing Plots: Romeo &amp; Juliet
+
+![](img/RJplot.jpeg)
+---
+### Emotional Contagion on Facebook
+
+![](img/facebook.png)
+
+---
+### Emotional Contagion on Facebook
+
+![](img/xkcd.png)
+
+---
+# Use with caution!
+
+- Most dictionary methods do not take into account qualifiers (e.g. "no good").
+- Ignores sarcasm, irony, nuance.
+- Dictionaries are .accent[context dependent].
+
+---
+### Validation, Dictionaries from other Fields
+
+--
+.accent[Accounting Research]: measure tone of 10-K reports 
+  - **tone** matters ($)
+
+
+--
+Previous state of art: Harvard-IV-4 Dictionary applied to texts Loughran and McDonald (2011). 
+
+
+--
+.accent[Financial Documents are Different] `\(\leadsto\)` **polysemes**
+
+--
+  - Negative words in Harvard, Not Negative in Accounting:
+    `tax, cost, capital, board, liability, foreign, cancer, crude (oil), tire`
+
+--
+  - .accent[73%] of Harvard negative words in this set(!!!!!)
+
+--
+  - Not Negative Harvard, Negative in Accounting: `felony, litigation, restated, misstatement, unanticipated`
+  
+  
+  
+--
+.accent[Context Matters!]
+
+---
+class: middle
+
+**`R Code!`**
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

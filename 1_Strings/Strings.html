@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Strings and Regular Expressions</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="PLSC 21510/31510" />
+    <script src="libs/header-attrs-2.16/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies-fonts.css" rel="stylesheet" />
+    <script src="libs/htmlwidgets-1.5.4/htmlwidgets.js"></script>
+    <link href="libs/str_view-0.1.0/str_view.css" rel="stylesheet" />
+    <script src="libs/str_view-binding-1.4.1/str_view.js"></script>
+    <link rel="stylesheet" href="libs/rt.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# Strings and Regular Expressions
+]
+.author[
+### PLSC 21510/31510
+]
+.date[
+### Fall 2022
+]
+
+---
+
+
+
+
+
+
+### Strings and Regular Expressions
+
+This unit focuses on character (or "string") data. We'll explore:
+
+1. .accent[string basics], like concatenating and subsetting.
+2. .accent[regular expressions], a powerful cross-language tool for working with string data.
+3. .accent[common tools], that take regex and apply them to real problems.
+
+We will use the **`stringr`** package for string manipulation. `stringr` is part of `tidyverse` but we need to load it explicitly.
+
+
+```r
+library(tidyverse)
+library(stringr)
+```
+
+---
+class: center, middle, inverse, title-slide
+
+# String Basics
+
+
+---
+### Creating Strings
+
+Create strings with either single quotes or double quotes. 
+
+
+```r
+string1 &lt;- "This is a string"
+```
+
+--
+Use `"` unless you want to create a string that contains multiple `"`.
+
+
+```r
+string2 &lt;- 'If I want to include a "quote" inside a string, I use single quotes'
+```
+
+--
+Multiple strings are stored in a character vector.
+
+
+```r
+string_vector &lt;- c("one", "two", "three")
+```
+
+---
+### Escape and Special Characters 
+
+Single and double quotes are known as .accent[metacharacters], meaning that they have special meaning to the R language. 
+
+To include a .accent[literal] single or double quote in a string you can use `\` to "escape" it:
+
+
+```r
+double_quote &lt;- "\"" # or '"'
+single_quote &lt;- '\'' # or "'"
+
+# To include a literal backslash, double it up
+backslash &lt;- "\\"
+```
+
+---
+### Printed Representation vs. Raw
+
+The .accent[printed representation] of a string is not the same as the string itself, because the printed representation shows the escapes. 
+
+To see the raw contents of the string, use `writeLines()`:
+
+
+```r
+x &lt;- c("\"", "\\")
+x
+#&gt; [1] "\"" "\\"
+
+writeLines(x)
+#&gt; "
+#&gt; \
+```
+
+---
+### Other special characters
+
+#### Most common:
+* `"\n"`: newline, 
+* `"\t"`, tab, 
+* See the complete list by requesting help on `"`: `?'"'`.
+
+#### Unicode:
+* Strings like `"\u00b5"`: non-English characters that works on all platforms.
+
+
+```r
+x &lt;- "\u00b5"
+x
+#&gt; [1] "µ"
+```
+
+---
+### Measure string length with `str_length()`
+
+All `stringr` functions start with `str_` (helpful to trigger autocomplete). 
+
+For example, `str_length()` tells you the number of characters in a string:
+
+
+```r
+str_length(c("a", "R for data science", NA))
+#&gt; [1]  1 18 NA
+```
+
+---
+### Combine strings with `str_c()`
+
+To combine two or more strings, use `str_c()`:
+
+
+```r
+str_c("x", "y")
+#&gt; [1] "xy"
+
+str_c("x", "y", "z")
+#&gt; [1] "xyz"
+```
+
+--
+Use the `sep` argument to control how they are separated:
+
+
+```r
+str_c("x", "y", sep = ", ")
+#&gt; [1] "x, y"
+```
+
+--
+`str_c()` is vectorised.
+
+
+```r
+x &lt;- c("a", "b", "c")
+str_c("prefix-", x)
+#&gt; [1] "prefix-a" "prefix-b" "prefix-c"
+```
+
+---
+### Subset strings with `str_sub()`
+
+`str_sub()` takes `start` and `end` arguments, which give the (inclusive) position of the substring.
+
+
+```r
+x &lt;- c("Rochelle is the GOAT")
+str_sub(x, 1, 8)
+#&gt; [1] "Rochelle"
+
+# Negative numbers count backwards from the end
+str_sub(x, -8, -1)
+#&gt; [1] "the GOAT"
+```
+
+--
+You can also use the assignment form of `str_sub()` to modify strings:
+
+
+```r
+x &lt;- c("Rochelle is the GOAT")
+str_sub(x, 1, 1) &lt;- str_to_lower(str_sub(x, 1, 1))
+x
+#&gt; [1] "rochelle is the GOAT"
+```
+
+---
+### Locales
+
+`str_to_lower()`, `str_to_upper()`, and `str_to_title()` changes case. 
+
+You can pick which set of rules to use by specifying a **`locale`**.
+
+The locale is specified as a ISO 639 language code, which is a two or three letter abbreviation. 
+
+
+```r
+# Turkish has two i's: 
+# with and without a dot, 
+# and has a different rules 
+# for capitalising them:
+str_to_upper(c("i", "ı"))
+#&gt; [1] "I" "I"
+
+str_to_upper(c("i", "ı"), 
+             locale = "tr")
+#&gt; [1] "İ" "I"
+```
+
+
+---
+
+class: center, middle, inverse, title-slide
+
+# Regular Expressions
+
+---
+class: center, middle
+
+#### Find a friend and complete this tutorial together: https://regexone.com/
+
+---
+### Regular expressions
+
+.accent[Regular expressions] (.accent[regex] or .accent[regexps]) are a very terse language that allow you to describe patterns in strings. 
+
+To learn regular expressions, we'll use `str_view()` and `str_view_all()`. These functions take a character vector and a regular expression, and show you how they match. 
+
+
+```r
+x &lt;- c("apple", "banana", "pear")
+str_view(x, "an")
+```
+
+<div id="htmlwidget-a640d145f4d441e5ae99" style="width:960px;height:100%;" class="str_view html-widget"></div>
+<script type="application/json" data-for="htmlwidget-a640d145f4d441e5ae99">{"x":{"html":"<ul>\n  <li>apple<\/li>\n  <li>b<span class='match'>an<\/span>ana<\/li>\n  <li>pear<\/li>\n<\/ul>"},"evals":[],"jsHooks":[]}</script>
+
+---
+### Basic matches
+
+.pull-left[
+The simplest patterns match exact strings:
+
+
+```r
+x &lt;- c("apple", "banana", "pear")
+str_view(x, "an")
+```
+
+<div id="htmlwidget-238f2f45b422cb228b89" style="width:960px;height:100%;" class="str_view html-widget"></div>
+<script type="application/json" data-for="htmlwidget-238f2f45b422cb228b89">{"x":{"html":"<ul>\n  <li>apple<\/li>\n  <li>b<span class='match'>an<\/span>ana<\/li>\n  <li>pear<\/li>\n<\/ul>"},"evals":[],"jsHooks":[]}</script>
+]
+
+.pull-right[
+**`.`** matches any character (except a newline):
+
+
+```r
+x &lt;- c("apple", "banana", "pear")
+str_view(x, ".a.")
+```
+
+<div id="htmlwidget-d6c3c98c5fb13b70b1ef" style="width:960px;height:100%;" class="str_view html-widget"></div>
+<script type="application/json" data-for="htmlwidget-d6c3c98c5fb13b70b1ef">{"x":{"html":"<ul>\n  <li>apple<\/li>\n  <li><span class='match'>ban<\/span>ana<\/li>\n  <li>p<span class='match'>ear<\/span><\/li>\n<\/ul>"},"evals":[],"jsHooks":[]}</script>
+]
+
+---
+### Escape Characters
+
+If **`.`** matches any character, how do you match the literal character "**`.`**"? 
+
+Regexps use the backslash, `\`, to escape metacharacters. So to match an **`.`**, you need the regexp `\.` 
+
+But this creates a problem! We use *strings* to represent regular expressions, and `\` is also used as an escape symbol in strings. 
+
+So to create the regular expression `\.` we need the string `"\\."`. 
+
+
+```r
+# To create the regular expression, we need \\
+dot &lt;- "\\."
+
+# But the expression itself only contains one:
+writeLines(dot)
+#&gt; \.
+```
+
+---
+### Anchors
+
+&gt; "if you begin with power (`^`), you end up with money (`$`).""
+
+.pull-left[
+Use `^` to match the start of the string.
+
+
+```r
+x &lt;- c("apple", "banana", "pear")
+str_view(x, "^a")
+```
+
+<div id="htmlwidget-3afaa631f1fdf21351f7" style="width:960px;height:100%;" class="str_view html-widget"></div>
+<script type="application/json" data-for="htmlwidget-3afaa631f1fdf21351f7">{"x":{"html":"<ul>\n  <li><span class='match'>a<\/span>pple<\/li>\n  <li>banana<\/li>\n  <li>pear<\/li>\n<\/ul>"},"evals":[],"jsHooks":[]}</script>
+]
+
+
+.pull-right[
+Use `$` to match the end of the string.
+
+
+```r
+x &lt;- c("apple", "banana", "pear")
+str_view(x, "a$")
+```
+
+<div id="htmlwidget-9a97d07333cbd0c648cd" style="width:960px;height:100%;" class="str_view html-widget"></div>
+<script type="application/json" data-for="htmlwidget-9a97d07333cbd0c648cd">{"x":{"html":"<ul>\n  <li>apple<\/li>\n  <li>banan<span class='match'>a<\/span><\/li>\n  <li>pear<\/li>\n<\/ul>"},"evals":[],"jsHooks":[]}</script>
+]
+
+---
+### Anchors
+
+To force a regular expression to only match a complete string, anchor it with both `^` and `$`:
+
+.pull-left[
+
+```r
+x &lt;- c("apple pie", "apple", 
+       "apple cake")
+str_view(x, "apple")
+```
+
+<div id="htmlwidget-a33bfbb8fe7774c5fe22" style="width:960px;height:100%;" class="str_view html-widget"></div>
+<script type="application/json" data-for="htmlwidget-a33bfbb8fe7774c5fe22">{"x":{"html":"<ul>\n  <li><span class='match'>apple<\/span> pie<\/li>\n  <li><span class='match'>apple<\/span><\/li>\n  <li><span class='match'>apple<\/span> cake<\/li>\n<\/ul>"},"evals":[],"jsHooks":[]}</script>
+]
+
+.pull-right[
+
+```r
+x &lt;- c("apple pie", "apple", 
+       "apple cake")
+str_view(x, "^apple$")
+```
+
+<div id="htmlwidget-edca8ffb1bb6d00f1330" style="width:960px;height:100%;" class="str_view html-widget"></div>
+<script type="application/json" data-for="htmlwidget-edca8ffb1bb6d00f1330">{"x":{"html":"<ul>\n  <li>apple pie<\/li>\n  <li><span class='match'>apple<\/span><\/li>\n  <li>apple cake<\/li>\n<\/ul>"},"evals":[],"jsHooks":[]}</script>
+]
+
+---
+### Character classes
+
+There are a number of special patterns that match more than one character. 
+
+* `\d`: matches any digit.
+* `\s`: matches any whitespace (e.g. space, tab, newline).
+* `[abc]`: matches a, b, or c.
+* `[^abc]`: matches anything except a, b, or c..
+* `[A-Z]`: matches capital letters A through Z.
+
+.pull-left[
+
+
+```r
+x &lt;- c("a1c", "a.c", "a*c", "a c")
+str_view(x, "\\d")
+```
+
+<div id="htmlwidget-9de59bfdd2843029d699" style="width:960px;height:100%;" class="str_view html-widget"></div>
+<script type="application/json" data-for="htmlwidget-9de59bfdd2843029d699">{"x":{"html":"<ul>\n  <li>a<span class='match'>1<\/span>c<\/li>\n  <li>a.c<\/li>\n  <li>a*c<\/li>\n  <li>a c<\/li>\n<\/ul>"},"evals":[],"jsHooks":[]}</script>
+]
+
+.pull-right[
+
+
+```r
+x &lt;- c("a1c", "a.c", "a*c", "a c")
+str_view(x, "a[.]c")
+```
+
+<div id="htmlwidget-ad373f29f56145164bfb" style="width:960px;height:100%;" class="str_view html-widget"></div>
+<script type="application/json" data-for="htmlwidget-ad373f29f56145164bfb">{"x":{"html":"<ul>\n  <li>a1c<\/li>\n  <li><span class='match'>a.c<\/span><\/li>\n  <li>a*c<\/li>\n  <li>a c<\/li>\n<\/ul>"},"evals":[],"jsHooks":[]}</script>
+]
+
+---
+### Alternation
+
+Use _alternation_ to pick between one or more alternative patterns. 
+
+For example, `abc|deaf` will match either '"abc"', or `"deaf"`. 
+
+Like with mathematical expressions, use parentheses to make it clear what you want.
+
+
+```r
+x &lt;- c("grey", "gray")
+str_view(x, "gr(e|a)y")
+```
+
+<div id="htmlwidget-42d3c6fd042fb41f7970" style="width:960px;height:100%;" class="str_view html-widget"></div>
+<script type="application/json" data-for="htmlwidget-42d3c6fd042fb41f7970">{"x":{"html":"<ul>\n  <li><span class='match'>grey<\/span><\/li>\n  <li><span class='match'>gray<\/span><\/li>\n<\/ul>"},"evals":[],"jsHooks":[]}</script>
+
+---
+### Repetition
+
+Control how many times a pattern matches:
+
+* `?`: 0 or 1
+* `+`: 1 or more
+* `*`: 0 or more
+
+.pull-left[
+
+```r
+x &lt;- "MDCCCLXXXVIII"
+str_view(x, "CC?")
+```
+
+<div id="htmlwidget-dceb2c54036abd1e8cb4" style="width:960px;height:100%;" class="str_view html-widget"></div>
+<script type="application/json" data-for="htmlwidget-dceb2c54036abd1e8cb4">{"x":{"html":"<ul>\n  <li>MD<span class='match'>CC<\/span>CLXXXVIII<\/li>\n<\/ul>"},"evals":[],"jsHooks":[]}</script>
+]
+
+.pull-right[
+
+```r
+x &lt;- "MDCCCLXXXVIII"
+str_view(x, 'C[LX]+')
+```
+
+<div id="htmlwidget-feb5293147bf51283d82" style="width:960px;height:100%;" class="str_view html-widget"></div>
+<script type="application/json" data-for="htmlwidget-feb5293147bf51283d82">{"x":{"html":"<ul>\n  <li>MDCC<span class='match'>CLXXX<\/span>VIII<\/li>\n<\/ul>"},"evals":[],"jsHooks":[]}</script>
+]
+
+---
+class: center, middle, inverse, title-slide
+
+# Applying Regex
+
+---
+## Applying regex
+
+Let's apply regex using `stringr` functions that let you
+
+* Detect matches in a string with `str_detect()`.
+* Count the number of matches with `str_count()`
+* Extract matches with `str_extract()` and `str_extract_all()`
+* Replace matches with `str_replace()` and `str_replace_all()`
+* Split a string based on a match with `str_split()`
+
+---
+### Detect matches: `str_detect()`
+
+To determine if a character vector matches a pattern, use `str_detect()`. It returns a logical vector the same length as the input:
+
+
+```r
+x &lt;- c("apple", "banana", "pear")
+str_detect(x, "e")
+#&gt; [1]  TRUE FALSE  TRUE
+```
+
+Remember that, when you use a logical vector in a numeric context, `FALSE` becomes 0 and `TRUE` becomes 1.
+
+```r
+# Get common words
+words &lt;- stringr::words
+# How many common words start with t?
+sum(str_detect(words, "^t"))
+#&gt; [1] 65
+# What proportion end with a vowel?
+mean(str_detect(words, "[aeiou]$"))
+#&gt; [1] 0.2765306
+```
+
+---
+### Subset matches: `str_subset()`
+
+To select the elements that match a pattern, use with `filter()`
+
+
+```r
+df &lt;- data.frame(
+  i = seq_along(words),
+  word = words
+)
+df %&gt;% 
+  filter(str_detect(word, "x$"))
+#&gt;     i word
+#&gt; 1 108  box
+#&gt; 2 747  sex
+#&gt; 3 772  six
+#&gt; 4 841  tax
+```
+
+---
+### Count matches: `str_count()`
+
+* To count how many matches there are in a string, use `str_count()`
+
+
+```r
+df1 &lt;- df %&gt;% 
+  mutate(
+    vowels = str_count(word, "[aeiou]"),
+    consonants = str_count(word, "[^aeiou]")
+  )
+
+head(df1)
+#&gt;   i     word vowels consonants
+#&gt; 1 1        a      1          0
+#&gt; 2 2     able      2          2
+#&gt; 3 3    about      3          2
+#&gt; 4 4 absolute      4          4
+#&gt; 5 5   accept      2          4
+#&gt; 6 6  account      3          4
+```
+
+---
+### Extract matches:  `str_extract()`
+
+To extract the actual text of a match, use `str_extract()`.
+
+
+```r
+head(sentences)
+#&gt; [1] "The birch canoe slid on the smooth planks." 
+#&gt; [2] "Glue the sheet to the dark blue background."
+#&gt; [3] "It's easy to tell the depth of a well."     
+#&gt; [4] "These days a chicken leg is a rare dish."   
+#&gt; [5] "Rice is often served in round bowls."       
+#&gt; [6] "The juice of lemons makes fine punch."
+```
+
+.accent[How do we find all sentences that contain a color?]
+
+---
+### Extract matches:  `str_extract()`
+
+
+```r
+# create a 'color' regex
+colors &lt;- c("red", "orange", "yellow", "green", "blue", "purple")
+color_match &lt;- str_c(colors, collapse = "|")
+color_match
+#&gt; [1] "red|orange|yellow|green|blue|purple"
+```
+
+--
+
+```r
+# find sentences with colors
+has_color &lt;- str_subset(sentences, color_match)
+head(has_color, 3)
+#&gt; [1] "Glue the sheet to the dark blue background."
+#&gt; [2] "Two blue fish swam in the tank."            
+#&gt; [3] "The colt reared and threw the tall rider."
+```
+
+--
+
+```r
+# extract the color
+matches &lt;- str_extract(has_color, color_match)
+head(matches)
+#&gt; [1] "blue" "blue" "red"  "red"  "red"  "blue"
+```
+
+---
+### Extract matches: : `str_extract()`
+
+Note that `str_extract()` only extracts the first match. 
+
+This is a common pattern for stringr functions, because working with a single match allows you to use much simpler data structures. 
+
+To get all matches, use `str_extract_all()`. It returns a list:
+
+
+```r
+all_colors &lt;- str_extract_all(has_color, color_match)
+all_colors[18:20]
+#&gt; [[1]]
+#&gt; [1] "blue"
+#&gt; 
+#&gt; [[2]]
+#&gt; [1] "red"
+#&gt; 
+#&gt; [[3]]
+#&gt; [1] "blue" "red"
+```
+
+---
+### Extract matches: `str_extract()`
+
+If you use `simplify = TRUE`, `str_extract_all()` will return a matrix with short matches expanded to the same length as the longest:
+
+
+```r
+color_mat &lt;- str_extract_all(has_color, color_match, simplify = TRUE)
+color_mat[18:22,]
+#&gt;      [,1]    [,2] 
+#&gt; [1,] "blue"  ""   
+#&gt; [2,] "red"   ""   
+#&gt; [3,] "blue"  "red"
+#&gt; [4,] "red"   ""   
+#&gt; [5,] "green" ""
+```
+
+---
+### Replacing matches: `str_replace()`
+
+`str_replace()` and `str_replace_all()` allow you to replace matches with new strings. 
+
+
+```r
+x &lt;- c("apple", "pear", "banana")
+str_replace(x, "[aeiou]", "-") # replace the first instance of a match
+#&gt; [1] "-pple"  "p-ar"   "b-nana"
+str_replace_all(x, "[aeiou]", "-") # replace all instances of a match
+#&gt; [1] "-ppl-"  "p--r"   "b-n-n-"
+```
+
+--
+With `str_replace_all()` you can perform multiple replacements by supplying a named vector:
+
+
+```r
+x &lt;- c("1 house", "2 cars", "3 people")
+str_replace_all(x, c("1" = "one", "2" = "two", "3" = "three"))
+#&gt; [1] "one house"    "two cars"     "three people"
+```
+
+---
+### Splitting: `str_split()`
+
+Use `str_split()` to split a string up into pieces. 
+
+
+```r
+sentences %&gt;%
+  str_split(" ") %&gt;%
+  head(3)
+#&gt; [[1]]
+#&gt; [1] "The"     "birch"   "canoe"   "slid"    "on"      "the"     "smooth" 
+#&gt; [8] "planks."
+#&gt; 
+#&gt; [[2]]
+#&gt; [1] "Glue"        "the"         "sheet"       "to"          "the"        
+#&gt; [6] "dark"        "blue"        "background."
+#&gt; 
+#&gt; [[3]]
+#&gt; [1] "It's"  "easy"  "to"    "tell"  "the"   "depth" "of"    "a"     "well."
+```
+
+---
+### Splitting: `str_split()`
+
+Like the other `stringr` functions that return a list, you can use `simplify = TRUE` to return a matrix:
+
+
+```r
+sentences %&gt;%
+  str_split(" ", simplify = TRUE) %&gt;%
+  head(3)
+#&gt;      [,1]   [,2]    [,3]    [,4]   [,5]  [,6]    [,7]     [,8]          [,9]   
+#&gt; [1,] "The"  "birch" "canoe" "slid" "on"  "the"   "smooth" "planks."     ""     
+#&gt; [2,] "Glue" "the"   "sheet" "to"   "the" "dark"  "blue"   "background." ""     
+#&gt; [3,] "It's" "easy"  "to"    "tell" "the" "depth" "of"     "a"           "well."
+#&gt;      [,10] [,11] [,12]
+#&gt; [1,] ""    ""    ""   
+#&gt; [2,] ""    ""    ""   
+#&gt; [3,] ""    ""    ""
+```
+
+---
+### Splitting: `str_split()`
+
+Instead of splitting up strings by patterns, you can also split up by character, line, sentence and word `boundary()`s:
+
+
+```r
+x &lt;- "This is a sentence.  This is another sentence."
+str_view_all(x, boundary("word"))
+```
+
+<div id="htmlwidget-fb540ba704e46ec6235c" style="width:960px;height:100%;" class="str_view html-widget"></div>
+<script type="application/json" data-for="htmlwidget-fb540ba704e46ec6235c">{"x":{"html":"<ul>\n  <li><span class='match'>This<\/span> <span class='match'>is<\/span> <span class='match'>a<\/span> <span class='match'>sentence<\/span>.  <span class='match'>This<\/span> <span class='match'>is<\/span> <span class='match'>another<\/span> <span class='match'>sentence<\/span>.<\/li>\n<\/ul>"},"evals":[],"jsHooks":[]}</script>
+
+```r
+str_split(x, boundary("word"))[[1]]
+#&gt; [1] "This"     "is"       "a"        "sentence" "This"     "is"       "another" 
+#&gt; [8] "sentence"
+```
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"highlightSpans": true
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

@@ -1,0 +1,552 @@
+---
+title: "Strings and Regular Expressions"
+author: "PLSC 21510/31510"
+date: "Fall 2022"
+output:
+  xaringan::moon_reader:
+    css: ["default",  "rladies", "rladies-fonts", "libs/rt.css"]
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      highlightSpans: true
+
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  comment = "#>",
+  collapse = T,
+  cache = F,
+  out.width = "70%",
+  fig.align = 'center',
+  fig.width = 6,
+  fig.asp = 0.618,  # 1 / phi
+  fig.show = "hold"
+)
+```
+
+```{r include=FALSE} 
+# include any code here you don't want to show up in the document,
+# e.g. package and dataset loading
+library(tidyverse)
+library(kableExtra)
+```
+
+
+### Strings and Regular Expressions
+
+This unit focuses on character (or "string") data. We'll explore:
+
+1. .accent[string basics], like concatenating and subsetting.
+2. .accent[regular expressions], a powerful cross-language tool for working with string data.
+3. .accent[common tools], that take regex and apply them to real problems.
+
+We will use the **`stringr`** package for string manipulation. `stringr` is part of `tidyverse` but we need to load it explicitly.
+
+```{r message = FALSE}
+library(tidyverse)
+library(stringr)
+```
+
+---
+class: center, middle, inverse, title-slide
+
+# String Basics
+
+
+---
+### Creating Strings
+
+Create strings with either single quotes or double quotes. 
+
+```{r}
+string1 <- "This is a string"
+```
+
+--
+Use `"` unless you want to create a string that contains multiple `"`.
+
+```{r}
+string2 <- 'If I want to include a "quote" inside a string, I use single quotes'
+```
+
+--
+Multiple strings are stored in a character vector.
+
+```{r}
+string_vector <- c("one", "two", "three")
+```
+
+---
+### Escape and Special Characters 
+
+Single and double quotes are known as .accent[metacharacters], meaning that they have special meaning to the R language. 
+
+To include a .accent[literal] single or double quote in a string you can use `\` to "escape" it:
+
+```{r}
+double_quote <- "\"" # or '"'
+single_quote <- '\'' # or "'"
+
+# To include a literal backslash, double it up
+backslash <- "\\"
+```
+
+---
+### Printed Representation vs. Raw
+
+The .accent[printed representation] of a string is not the same as the string itself, because the printed representation shows the escapes. 
+
+To see the raw contents of the string, use `writeLines()`:
+
+```{r}
+x <- c("\"", "\\")
+x
+
+writeLines(x)
+```
+
+---
+### Other special characters
+
+#### Most common:
+* `"\n"`: newline, 
+* `"\t"`, tab, 
+* See the complete list by requesting help on `"`: `?'"'`.
+
+#### Unicode:
+* Strings like `"\u00b5"`: non-English characters that works on all platforms.
+
+```{r}
+x <- "\u00b5"
+x
+```
+
+---
+### Measure string length with `str_length()`
+
+All `stringr` functions start with `str_` (helpful to trigger autocomplete). 
+
+For example, `str_length()` tells you the number of characters in a string:
+
+```{r}
+str_length(c("a", "R for data science", NA))
+```
+
+---
+### Combine strings with `str_c()`
+
+To combine two or more strings, use `str_c()`:
+
+```{r}
+str_c("x", "y")
+
+str_c("x", "y", "z")
+```
+
+--
+Use the `sep` argument to control how they are separated:
+
+```{r}
+str_c("x", "y", sep = ", ")
+```
+
+--
+`str_c()` is vectorised.
+
+```{r}
+x <- c("a", "b", "c")
+str_c("prefix-", x)
+```
+
+---
+### Subset strings with `str_sub()`
+
+`str_sub()` takes `start` and `end` arguments, which give the (inclusive) position of the substring.
+
+```{r}
+x <- c("Rochelle is the GOAT")
+str_sub(x, 1, 8)
+
+# Negative numbers count backwards from the end
+str_sub(x, -8, -1)
+```
+
+--
+You can also use the assignment form of `str_sub()` to modify strings:
+
+```{r}
+x <- c("Rochelle is the GOAT")
+str_sub(x, 1, 1) <- str_to_lower(str_sub(x, 1, 1))
+x
+```
+
+---
+### Locales
+
+`str_to_lower()`, `str_to_upper()`, and `str_to_title()` changes case. 
+
+You can pick which set of rules to use by specifying a **`locale`**.
+
+The locale is specified as a ISO 639 language code, which is a two or three letter abbreviation. 
+
+```{r}
+# Turkish has two i's: 
+# with and without a dot, 
+# and has a different rules 
+# for capitalising them:
+str_to_upper(c("i", "ı"))
+
+str_to_upper(c("i", "ı"), 
+             locale = "tr")
+```
+
+
+---
+
+class: center, middle, inverse, title-slide
+
+# Regular Expressions
+
+---
+class: center, middle
+
+#### Find a friend and complete this tutorial together: https://regexone.com/
+
+---
+### Regular expressions
+
+.accent[Regular expressions] (.accent[regex] or .accent[regexps]) are a very terse language that allow you to describe patterns in strings. 
+
+To learn regular expressions, we'll use `str_view()` and `str_view_all()`. These functions take a character vector and a regular expression, and show you how they match. 
+
+```{r}
+x <- c("apple", "banana", "pear")
+str_view(x, "an")
+```
+
+---
+### Basic matches
+
+.pull-left[
+The simplest patterns match exact strings:
+
+```{r}
+x <- c("apple", "banana", "pear")
+str_view(x, "an")
+```
+]
+
+.pull-right[
+**`.`** matches any character (except a newline):
+
+```{r}
+x <- c("apple", "banana", "pear")
+str_view(x, ".a.")
+```
+]
+
+---
+### Escape Characters
+
+If **`.`** matches any character, how do you match the literal character "**`.`**"? 
+
+Regexps use the backslash, `\`, to escape metacharacters. So to match an **`.`**, you need the regexp `\.` 
+
+But this creates a problem! We use *strings* to represent regular expressions, and `\` is also used as an escape symbol in strings. 
+
+So to create the regular expression `\.` we need the string `"\\."`. 
+
+```{r}
+# To create the regular expression, we need \\
+dot <- "\\."
+
+# But the expression itself only contains one:
+writeLines(dot)
+```
+
+---
+### Anchors
+
+> "if you begin with power (`^`), you end up with money (`$`).""
+
+.pull-left[
+Use `^` to match the start of the string.
+
+```{r}
+x <- c("apple", "banana", "pear")
+str_view(x, "^a")
+```
+]
+
+
+.pull-right[
+Use `$` to match the end of the string.
+
+```{r}
+x <- c("apple", "banana", "pear")
+str_view(x, "a$")
+```
+]
+
+---
+### Anchors
+
+To force a regular expression to only match a complete string, anchor it with both `^` and `$`:
+
+.pull-left[
+```{r}
+x <- c("apple pie", "apple", 
+       "apple cake")
+str_view(x, "apple")
+```
+]
+
+.pull-right[
+```{r}
+x <- c("apple pie", "apple", 
+       "apple cake")
+str_view(x, "^apple$")
+```
+]
+
+---
+### Character classes
+
+There are a number of special patterns that match more than one character. 
+
+* `\d`: matches any digit.
+* `\s`: matches any whitespace (e.g. space, tab, newline).
+* `[abc]`: matches a, b, or c.
+* `[^abc]`: matches anything except a, b, or c..
+* `[A-Z]`: matches capital letters A through Z.
+
+.pull-left[
+
+```{r}
+x <- c("a1c", "a.c", "a*c", "a c")
+str_view(x, "\\d")
+```
+]
+
+.pull-right[
+
+```{r}
+x <- c("a1c", "a.c", "a*c", "a c")
+str_view(x, "a[.]c")
+```
+]
+
+---
+### Alternation
+
+Use _alternation_ to pick between one or more alternative patterns. 
+
+For example, `abc|deaf` will match either '"abc"', or `"deaf"`. 
+
+Like with mathematical expressions, use parentheses to make it clear what you want.
+
+```{r}
+x <- c("grey", "gray")
+str_view(x, "gr(e|a)y")
+```
+
+---
+### Repetition
+
+Control how many times a pattern matches:
+
+* `?`: 0 or 1
+* `+`: 1 or more
+* `*`: 0 or more
+
+.pull-left[
+```{r}
+x <- "MDCCCLXXXVIII"
+str_view(x, "CC?")
+```
+]
+
+.pull-right[
+```{r}
+x <- "MDCCCLXXXVIII"
+str_view(x, 'C[LX]+')
+```
+]
+
+---
+class: center, middle, inverse, title-slide
+
+# Applying Regex
+
+---
+## Applying regex
+
+Let's apply regex using `stringr` functions that let you
+
+* Detect matches in a string with `str_detect()`.
+* Count the number of matches with `str_count()`
+* Extract matches with `str_extract()` and `str_extract_all()`
+* Replace matches with `str_replace()` and `str_replace_all()`
+* Split a string based on a match with `str_split()`
+
+---
+### Detect matches: `str_detect()`
+
+To determine if a character vector matches a pattern, use `str_detect()`. It returns a logical vector the same length as the input:
+
+```{r}
+x <- c("apple", "banana", "pear")
+str_detect(x, "e")
+```
+
+Remember that, when you use a logical vector in a numeric context, `FALSE` becomes 0 and `TRUE` becomes 1.
+```{r}
+# Get common words
+words <- stringr::words
+# How many common words start with t?
+sum(str_detect(words, "^t"))
+# What proportion end with a vowel?
+mean(str_detect(words, "[aeiou]$"))
+```
+
+---
+### Subset matches: `str_subset()`
+
+To select the elements that match a pattern, use with `filter()`
+
+```{r}
+df <- data.frame(
+  i = seq_along(words),
+  word = words
+)
+df %>% 
+  filter(str_detect(word, "x$"))
+```
+
+---
+### Count matches: `str_count()`
+
+* To count how many matches there are in a string, use `str_count()`
+
+```{r}
+df1 <- df %>% 
+  mutate(
+    vowels = str_count(word, "[aeiou]"),
+    consonants = str_count(word, "[^aeiou]")
+  )
+
+head(df1)
+```
+
+---
+### Extract matches:  `str_extract()`
+
+To extract the actual text of a match, use `str_extract()`.
+
+```{r}
+head(sentences)
+```
+
+.accent[How do we find all sentences that contain a color?]
+
+---
+### Extract matches:  `str_extract()`
+
+```{r}
+# create a 'color' regex
+colors <- c("red", "orange", "yellow", "green", "blue", "purple")
+color_match <- str_c(colors, collapse = "|")
+color_match
+```
+
+--
+```{r}
+# find sentences with colors
+has_color <- str_subset(sentences, color_match)
+head(has_color, 3)
+```
+
+--
+```{r}
+# extract the color
+matches <- str_extract(has_color, color_match)
+head(matches)
+```
+
+---
+### Extract matches: : `str_extract()`
+
+Note that `str_extract()` only extracts the first match. 
+
+This is a common pattern for stringr functions, because working with a single match allows you to use much simpler data structures. 
+
+To get all matches, use `str_extract_all()`. It returns a list:
+
+```{r}
+all_colors <- str_extract_all(has_color, color_match)
+all_colors[18:20]
+```
+
+---
+### Extract matches: `str_extract()`
+
+If you use `simplify = TRUE`, `str_extract_all()` will return a matrix with short matches expanded to the same length as the longest:
+
+```{r}
+color_mat <- str_extract_all(has_color, color_match, simplify = TRUE)
+color_mat[18:22,]
+```
+
+---
+### Replacing matches: `str_replace()`
+
+`str_replace()` and `str_replace_all()` allow you to replace matches with new strings. 
+
+```{r}
+x <- c("apple", "pear", "banana")
+str_replace(x, "[aeiou]", "-") # replace the first instance of a match
+str_replace_all(x, "[aeiou]", "-") # replace all instances of a match
+```
+
+--
+With `str_replace_all()` you can perform multiple replacements by supplying a named vector:
+
+```{r}
+x <- c("1 house", "2 cars", "3 people")
+str_replace_all(x, c("1" = "one", "2" = "two", "3" = "three"))
+```
+
+---
+### Splitting: `str_split()`
+
+Use `str_split()` to split a string up into pieces. 
+
+```{r}
+sentences %>%
+  str_split(" ") %>%
+  head(3)
+```
+
+---
+### Splitting: `str_split()`
+
+Like the other `stringr` functions that return a list, you can use `simplify = TRUE` to return a matrix:
+
+```{r}
+sentences %>%
+  str_split(" ", simplify = TRUE) %>%
+  head(3)
+```
+
+---
+### Splitting: `str_split()`
+
+Instead of splitting up strings by patterns, you can also split up by character, line, sentence and word `boundary()`s:
+
+```{r}
+x <- "This is a sentence.  This is another sentence."
+str_view_all(x, boundary("word"))
+str_split(x, boundary("word"))[[1]]
+```

@@ -1,0 +1,539 @@
+---
+title: "Preprocessing"
+author: "PLSC 21510/31510"
+date: "2022"
+output: html_document
+---
+
+## Preprocessing
+
+> Note!
+> I **highly** recommend you make a copy of this document using "save as." 
+> Then you can edit and play without losing the original code.
+
+In this document, we will demonstrate preprocessing techniques using the `quanteda` package. Some of this material was remixed from the [quanteda tutorial website](https://tutorials.quanteda.io/).
+
+Also see this helpful [reference guide](https://quanteda.io/reference/index.html).
+
+## Getting Started
+
+### Installation
+
+Make sure you have installed everything specified in the [installation instructions](https://github.com/rochelleterman/TAD-S22/blob/main/B_Installation.md).
+
+We will need the following packages:
+
+```{r message=F}
+# quanteda stuff
+require(quanteda)
+require(quanteda.textmodels)
+require(quanteda.textstats)
+require(quanteda.textplots)
+require(quanteda.corpora)
+
+# other stuff
+require(readtext)
+require(devtools)
+require(tidyverse) # Data preparation and pipes %>%
+require(ggplot2) # For plotting word frequencies
+```
+
+## Importing texts
+
+### From a spreadsheet
+
+If your text data is stored in a spreadsheet where one column contains the text and additional columns might store document-level variables (e.g. year, author, or language), you can use `read.csv()` to import. 
+
+```{r}
+dat_inaug <-read.csv("data/inaug.csv") # Read in CSV file
+str(dat_inaug)
+```
+
+Alternatively, you can use the `readtext` package to import CSV files. 
+
+```{r}
+dat_inaug <- readtext("data/inaug.csv")
+str(dat_inaug)
+```
+
+### From a directory of tiles
+
+Another option is to load multiple text files at once that are stored in the same folder or subfolders. 
+
+Unlike the pre-formatted files, individual text files usually do not contain document-level variables. However, you can create document-level variables using the `readtext` package.
+
+The directory `data/UDHR_txt` contains text files (".txt") of the Universal Declaration of Human Rights in 13 languages. 
+
+```{r}
+dat_udhr <- readtext("data/UDHR_txt/*")
+str(dat_udhr)
+```
+
+You can generate document-level variables based on the file names using the `docvarnames` and `docvarsfrom` argument. The argument `dvsep = "_"` specifies the value separator in the filenames. The argument `encoding = "ISO-8859-1"` specifies character encodings of the texts.
+
+```{r}
+dat_eu <- readtext("data/EU_manifestos/*.txt",
+                    docvarsfrom = "filenames", 
+                    docvarnames = c("unit", "context", "year", "language", "party"),
+                    dvsep = "_", 
+                    encoding = "ISO-8859-1")
+str(dat_eu)
+```
+
+### Other formats (not recommended)
+
+*readtext()* can try to read and convert PDF files.
+
+```{r}
+dat_udhr <- readtext("data/UDHR_pdf/*.pdf",
+                      docvarsfrom = "filenames", 
+                      docvarnames = c("document", "language"),
+                      sep = "_")
+str(dat_udhr)
+```
+
+Finally, `readtext()` can import Microsoft Word (`.doc` and `.docx`) files. 
+
+```{r}
+dat_word <- readtext("data/word/*.docx")
+str(dat_word)
+```
+
+
+## Constructing a Corpus
+
+### Make a corpus with `corpus()`
+
+After we've imported the text data, we need to construct a corpus with the `corpus()` function.
+
+```{r}
+corp_inaug <- corpus(dat_inaug, text_field = "text")
+summary(corp_inaug)
+```
+
+You can edit the `docnames` for a corpus to make a meaningful identifier.
+
+```{r}
+docid <- str_c(dat_inaug$Year, 
+               dat_inaug$FirstName, 
+               dat_inaug$President, sep = " ")
+docid
+docnames(corp_inaug) <- docid
+summary(corp_inaug)
+```
+
+### Metadata (Document-level variables)
+
+`quanteda`'s objects keep metadata information associated with documents. They are called "document-level variables", or "docvars" and accessed using `docvars()`.
+
+> Note!
+> Here we'll manipulate metadata directly on the quanteda `corpus` object, 
+> but you could also do it on the original CSV file, before you make a corpus.
+
+```{r}
+# read about the US inaugural address object
+?data_corpus_inaugural
+
+# make a corpus
+corp <- data_corpus_inaugural
+
+# extract docvars
+head(docvars(corp))
+```
+
+#### Extract and assign metadata with `docvars()`
+
+If you want to extract individual elements of document variables, you can specify `field`.
+
+```{r}
+docvars(corp, field = "Year")
+```
+
+You can also access to individual document-level variables using the `$` operator. 
+
+```{r}
+corp$Year
+```
+
+`docvars()` also allows you to create or update document variables.
+
+```{r}
+# add a "century" variable
+docvars(corp, field = "Century") <- floor(docvars(corp, field = "Year") / 100) + 1
+head(docvars(corp))
+```
+
+Alernatively, you can create the document-level variable using the `$` operator
+
+```{r}
+corp$Century <- floor(corp$Year / 100) + 1
+```
+
+#### Subset on metadata using `corpus_subset()
+
+`corpus_subset()` allows you to select documents in a corpus based on document-level variables.
+
+```{r}
+# get recent speeches
+corp_recent <- corpus_subset(corp, Year >= 1990)
+ndoc(corp_recent)
+
+# get speeches from democrats
+corp_dem <- corpus_subset(corp, President %in% c("Obama", "Clinton", "Carter"))
+ndoc(corp_dem)
+```
+
+> Note!
+> Quanteda supports use of the `%>%` like in tidyverse:
+
+```{r}
+# get recent speeches
+corp_recent <- data_corpus_inaugural %>% 
+  corpus_subset(Year >= 1990)
+ndoc(corp_recent)
+
+# get speeches from democrats
+corp_dem <- data_corpus_inaugural %>%
+  corpus_subset(President %in% c("Obama", "Clinton", "Carter"))
+ndoc(corp_dem)
+```
+
+
+### Reshape with `corpus_reshape()`
+
+`corpus_reshape()` allows to change the unit of texts between documents, paragraphs and sentences. Since it records document identifiers, texts can be restored to the original unit even if the corpus is modified by other functions.
+
+Let's change the unit of documents in the Presidential inaugural address corpus to sentences.
+
+```{r}
+corp_sent <- data_corpus_inaugural %>%
+  corpus_reshape(to = "sentences")
+
+head(print(corp_sent))
+ndoc(corp_sent)
+head(summary(corp_sent))
+```
+
+Restore the original documents.
+
+```{r}
+corp_doc <- corp_sent %>% 
+  corpus_reshape(to = "documents")
+
+ndoc(corp_doc)
+```
+
+If you apply `corpus_subset()` to `corp_sent`, you can only keep long sentences (more than 10 words).
+
+```{r}
+corp_sent_long <- corp_sent %>%
+  corpus_subset(ntoken(corp_sent) >= 10)
+
+ndoc(corp_sent_long)
+```
+
+### Segment with `corpus_segment()`
+
+Using `corpus_segment()`, you can extract segments of texts and tags from documents. This is particular useful when you analyze sections of documents or transcripts separately. 
+
+Let's look again at the Republican transcript from Assignment 1.
+
+```{r}
+# read in Republic transcript from Assignment 1
+debate <- readtext("data/transcript.txt")
+corp_debate <- corpus(debate)
+summary(corp_debate)
+
+# segment by speaker
+corp_speakers <- corp_debate %>%
+  corpus_segment(pattern = "[A-Z]+:", 
+                 case_insensitive = F,
+                 valuetype = "regex",
+                 extract_pattern = T,
+                 pattern_position = "before")
+summary(corp_speakers)
+```
+
+## Tokenization and preprocessing
+
+Many text analysis applications follow a similar 'recipe' for preprocessing, involving:
+
+1. Tokenize the text (to unigrams, ngrams, sentences, etc).
+2. Remove punctuation and numbers.
+3. Convert all characters to lowercase.
+4. Remove stop words, including custom stop words.
+5. "Stem" or lemmitize words.
+6. Create a Document-Term (Feature) Matrix (DTM of DFM).
+
+The order of these steps might differ as per application. 
+
+In `quanteda`, our first step is to create a `tokens` object. We will then conduct steps 1-6 before creating a DTM.
+
+In the following example, we'll use the `data_char_ukimmig2010` object that comes with `quanteda`. It's a character vector and consists of sections of British election manifestos on immigration and asylum. 
+
+```{r}
+?data_char_ukimmig2010
+```
+
+### Step 1: Tokenize with `tokens()`
+
+`tokens()` segments texts in a corpus into tokens (words, sentences, ngrams) by word boundaries. 
+
+We use the `split_hyphens` argument to split hyphenated words in multiple tokens
+
+```{r}
+corp_imm <- corpus(data_char_ukimmig2010)
+toks_imm <- corp_imm %>% 
+  tokens(split_hyphens = T)
+
+head(toks_imm)
+```
+
+Sometimes we treat multi-word expressions as one term. To preserve these expressions in a bag-of-word analysis, you have to compound them using `tokens_compound()`.
+
+```{r}
+toks_imm <- corp_imm %>% tokens(split_hyphens = T)
+toks_comp <- tokens_compound(toks_imm, 
+                 pattern = phrase(c("immigration system", "British citizen*")))
+head(toks_comp)
+```
+
+
+### Step 2: Remove punctuation, capitalization, numbers
+
+By default, `tokens()` only removes separators (typically whitespaces), but you can also remove punctuation, numbers, and symbols.
+
+```{r}
+toks_imm <- corp_imm %>%
+  tokens(split_hyphens = T,
+         remove_punct = TRUE,
+         remove_numbers = TRUE,
+         remove_symbols = TRUE) 
+head(toks_imm)
+```
+
+
+### Step 3: Remove capitalization with `tokens_tolower()`
+
+We can remove case using `tokens_tolower()`. The `keep_acronyms` argument keeps all-uppercase words.
+
+
+```{r}
+toks_imm <- corp_imm %>%
+  tokens(split_hyphens = T,
+         remove_punct = TRUE,
+         remove_numbers = TRUE,
+         remove_symbols = TRUE) %>%
+  tokens_tolower(keep_acronyms = F) # change to T to keep.
+head(toks_imm)
+```
+
+### Step 4. Remove words with `tokens_remove()`
+
+You can remove tokens that you are not interested in using `tokens_remove()`. 
+
+Usually we remove function words (grammatical words) that have little or no substantive meaning in pre-processing. `stopwords()` returns a pre-defined list of function words.
+
+```{r}
+toks_imm <- corp_imm %>%
+  tokens(split_hyphens = T,
+         remove_punct = TRUE,
+         remove_numbers = TRUE,
+         remove_symbols = TRUE) %>%
+  tokens_tolower(keep_acronyms = F) %>% # change to T to keep. 
+  tokens_remove(pattern = stopwords("en"))
+head(toks_imm)
+```
+
+Alternativey, we can *select* certain tokens using `tokens_select()`. Let's say we analyze words that appear around particular keywords.
+
+```{r}
+toks_immig_window <- toks_imm %>%
+  tokens_select(pattern = c("immig*", "migra*"), 
+                window = 5)
+head(toks_immig_window)
+```
+
+### Step 5. "Stem" or lemmitize words with `tokens_wordstem()`
+
+There are multiple stemming algorithms out there.
+
+We can stem words using `tokens_wordstem()`, which applies Porter's stemming algorithm..
+
+```{r}
+toks_imm <- corp_imm %>%
+  tokens(split_hyphens = T,
+         remove_punct = TRUE,
+         remove_numbers = TRUE,
+         remove_symbols = TRUE) %>%
+  tokens_tolower(keep_acronyms = F) %>% # change to T to keep. 
+  tokens_remove(pattern = stopwords("en")) %>%
+  tokens_wordstem()
+head(toks_imm)
+```
+
+### Optional: Generate n-grams with `toks_ngram()`
+
+So far we've been working with unigrams. But you can generate n-grams in any lengths from a tokens using `tokens_ngrams()`. N-grams are a sequence of tokens from already tokenized text objects.
+
+```{r}
+# bigrams
+toks_ngram <- toks_imm <- corp_imm %>%
+  tokens(split_hyphens = T,
+         remove_punct = TRUE,
+         remove_numbers = TRUE,
+         remove_symbols = TRUE) %>%
+  tokens_tolower(keep_acronyms = F) %>% # change to T to keep. 
+  tokens_remove(pattern = stopwords("en")) %>%
+  tokens_wordstem() %>%
+  tokens_ngrams(n = 2)
+head(toks_ngram)
+
+# get 2, 3, AND 4-gram
+toks_ngram <- toks_imm <- corp_imm %>%
+  tokens(split_hyphens = T,
+         remove_punct = TRUE,
+         remove_numbers = TRUE,
+         remove_symbols = TRUE) %>%
+  tokens_tolower(keep_acronyms = F) %>% # change to T to keep. 
+  tokens_remove(pattern = stopwords("en")) %>%
+  tokens_wordstem() %>%
+  tokens_ngrams(n = 2:4)
+toks_ngram[[1]][4000]
+```
+
+### Step 6: Create DTM / DFM with `dfm()` 
+
+The `quanteda` package uses the terminology "document-feature matrix (DFM)", which is the same as a DTM.
+
+`dfm()` constructs a DFM from a tokens object.
+
+```{r}
+toks_imm <- corp_imm %>%
+  tokens(split_hyphens = T,
+         remove_punct = TRUE,
+         remove_numbers = TRUE,
+         remove_symbols = TRUE) %>%
+  tokens_tolower(keep_acronyms = F) %>% # change to T to keep. 
+  tokens_remove(pattern = stopwords("en")) %>%
+  tokens_wordstem()
+
+dfm_imm <- dfm(toks_imm)
+head(dfm_imm)
+```
+
+
+## Exploring the DTM / DFM
+
+### Frequencies
+
+Let's look at the structure of our DFM. How many documents do we have? How many terms?
+
+```{r}
+ndoc(dfm_imm)
+nfeat(dfm_imm)
+```
+
+Just like normal matrices, you can use `rowSums()` and `colSums()` to calculate marginals. Think about what the following represent:
+
+```{r}
+# document length
+by_docs <- rowSums(dfm_imm)
+head(by_docs)
+
+# term frequencies
+by_term <- colSums(dfm_imm)
+head(by_term)
+
+# The most frequent features can be found using topfeatures().
+topfeatures(dfm_imm)
+```
+
+### Proportions and Weighting
+
+If you want to convert the frequency count to a proportion within documents, use `dfm_weight(scheme = "prop")`.
+
+```{r}
+dfm_imm_prop <- dfm_weight(dfm_imm, scheme  = "prop")
+head(dfm_imm_prop)
+```
+
+Another common pre-processing step that some applications may call for is applying tf-idf weights. The [tf-idf](https://en.wikipedia.org/wiki/Tf%E2%80%93idf), or term frequency-inverse document frequency, is a weight that ranks the uniqueness of the terms across documents. In other words, it places importance on terms frequent in the document but rare in the corpus.
+
+```{r}
+dfm_imm_tfidf <- dfm_tfidf(dfm_imm)
+
+# compare these two. what do you notice?
+head(dfm_imm_prop)
+head(dfm_imm_tfidf)
+```
+
+### Sparse terms
+
+Sometimes we want to remove sparse terms in order to increase efficiency. We can use the `sparsity()` to calculate the sparsity of the DFM.
+
+```{r}
+# see how sparsity works
+?sparsity
+
+# calculate
+sparsity(dfm_imm)
+```
+
+`dfm_trim()` selects terms based on  frequencies. If `min_termfreq = 10`, features that occur less than 10 times in the corpus are removed. 
+
+```{r}
+dfm_imm_freq <- dfm_trim(dfm_imm, min_termfreq = 10)
+nfeat(dfm_imm)
+nfeat(dfm_imm_freq)
+```
+
+How many terms did we just remove?
+
+If `min_docfreq = 0.15`, features that occur in less than 15% of the documents are removed.
+
+```{r}
+dfm_imm_freq <- dfm_trim(dfm_imm, 
+                         min_docfreq = .15,
+                         docfreq_type = "prop")
+nfeat(dfm_imm)
+nfeat(dfm_imm_freq)
+```
+
+How many terms were removed?
+
+## Challenges
+
+### Create a DFM
+
+Using one of the corpora in the "./data" or "../text-data" directorys, create a document term matrix. Think about each of the preprocessing steps and adjust accordingly.
+
+```{r eval = F}
+# YOUR CODE HERE
+```
+
+### Tokenizers
+
+Using your corpus, compare the 5 tokenizers below. What differences do you notice?
+
+```{r eval  = F}
+# You will need to install a couple extra packages if you don't have them
+# install.packages(c("corpus", "text2vec"))
+  
+corpus::text_tokens() # corpus
+tokenizers::tokenize_words() # tokenizers
+text2vec::word_tokenizer() #text2vec
+quanteda::tokenize_word() # quanteda
+strsplit( , split = "\\s") #base R
+```
+
+### Plotting Frequencies
+
+Using your dtm, make a plot that shows the frequency of frequencies for the terms. (For example, how many words are used only once? 5 times? 10 times?) What does this tell us about the nature of language?
+
+```{r}
+# YOUR CODE HERE
+```
+
+
+

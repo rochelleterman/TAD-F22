@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Webscraping</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="PLSC 21510/31510" />
+    <script src="libs/header-attrs-2.16/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies-fonts.css" rel="stylesheet" />
+    <link rel="stylesheet" href="libs/rt.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Webscraping
+### PLSC 21510/31510
+### Fall 2022
+
+---
+
+
+
+
+
+
+## Webscraping v. APIs
+
+#### Webscraping Benefits
+
+* Any content that can be viewed on a webpage can be scraped. [Period](https://blog.hartleybrody.com/web-scraping/)
+* No API needed
+* No rate-limiting or authentication (usually)
+
+#### Webscraping Challenges
+* Rarely tailored for researchers
+* Messy, unstructured, inconsistent
+* Entirely site-dependent
+
+#### Rule of thumb:
+- Check for API first. If not available, scrape.
+
+---
+## Some Disclaimers
+
+* Check a site's terms and conditions before scraping.
+
+* Be nice - don't hammer the site's server. Review [these ethical webscraping tips](https://towardsdatascience.com/ethics-in-web-scraping-b96b18136f01)
+
+* Sites change their layout all the time. Your scraper will break.
+
+---
+## What's a website?
+
+* Some combination of **code**base + **data**base that lives on a server.
+
+* When it gets to us (the "front end"), it's delivered to us as HTML + CSS stylesheets + javascript.
+
+
+```html
+"&lt;!DOCTYPE html&gt;\n&lt;html lang=\"mul\" dir=\"ltr\"&gt;\n&lt;head&gt;\n&lt;!-- Sysops: 
+Please do not edit the main template directly; update /temp and synchronise. 
+--&gt;\n&lt;meta charset=\"utf-8\"&gt;\n&lt;title&gt;Wikipedia&lt;/title&gt;\n&lt;!--[if lt IE 7]&gt;&lt;meta
+http-equiv=\"imagetoolbar\" content=\"no\"&gt;&lt;![endif]--&gt;\n&lt;meta name=\"viewport\"
+content=\"i"
+```
+
+---
+## What's a website
+
+* Your browser turns that into a nice layout.
+
+![layout](img/layout.png)
+
+---
+## Websites return HTML
+
+* HTML stands for **H**yper **T**ext **M**arkup **L**anguage.
+
+* HTML describes the **structure** of a Web page.
+
+* HTML consists of a series of **elements**.
+
+* HTML elements tell the browser how to display the content.
+
+* HTML elements label pieces of content such as "this is a heading",
+"this is a paragraph", "this is a link", etc.
+
+&gt; #### Pop quiz 
+&gt; What markup language am I writing in right now?
+
+---
+## Webscraping returns HTML
+
+* It's easy to pull HTML from a website.
+
+* It's much more difficult to find the information you want from that HTML.
+
+&gt; Check out the source for [www.google.com](view-source:https://www.google.com/)
+
+* We have to learn how to **parse** HTML to find the data we want.
+
+---
+## HTML: Basic structure
+
+```html
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+	 &lt;head&gt;
+		&lt;title&gt;Page title&lt;/title&gt;
+	&lt;/head&gt;
+ 	&lt;body&gt;
+ 		&lt;p&gt;Hello world!&lt;/p&gt;
+ 	&lt;/body&gt;
+&lt;/html&gt;
+```
+---
+## HTML is a Tree
+
+* Each branch of the tree is called an *element*.
+
+* HTML elements can contain other elements.
+
+![tree](img/HTMLDOMTree.png)
+
+---
+## HTML Elements
+
+An HTML element is defined by a start tag, some content, and an end tag:
+
+![html-tags](img/html-tags.png)
+
+The HTML element is everything from the start tag to the end tag.
+
+---
+## Common HTML tags
+
+| Tag        | Meaning           | 
+| ------------- |-------------  |
+| `&lt;head&gt;`     | page header (metadata, etc) | 
+| `&lt;body&gt;`     | holds all of the content |
+| `&lt;p&gt;` | regular text (paragraph) |
+| `&lt;h1&gt;`, `&lt;h2&gt;`, `&lt;h3&gt;` | header text, levels 1, 2, 3  |
+| `ol,`, `&lt;ul&gt;`, `&lt;li&gt;` | ordered list, unordered list, list item |
+| `&lt;a href="page.html"&gt;` | link to "page.html" |
+| `&lt;table&gt;`, `&lt;tr&gt;`, `&lt;td&gt;`  | table, table row, table item |
+| `&lt;div&gt;`,`&lt;span&gt;` | general containers |
+
+---
+## HTML Page Structure
+
+![page-structure](img/page-structure.png)
+
+---
+## HTML Attributes
+
+.pull-left[
+* HTML elements can have attributes, which provide additional information about an element.
+
+* Attributes are always specified in the start tag.
+
+* Attributes come in name/value pairs like: name="value"
+]
+
+.pull-right[
+![html-tags](img/html-attributes.png)
+]
+
+---
+## Finding HTML 
+
+Sometimes we can find the data we want just by using HTML tags or attributes (e.g, all the `&lt;a&gt;` tags)
+
+More often, this isn't enough: There might be 1000 `&lt;a&gt;` tags on a page. But maybe we want only the `&lt;a&gt;` tags *inside* of a `&lt;p&gt;` tag.
+
+Enter CSS...
+
+---
+## CSS (**Cascading** Style Sheet) 
+
+CSS defines how HTML elements are displayed.
+
+
+--
+HTML came first. But it was only meant to *define* content, not *format *it. 
+
+
+--
+While HTML contains tags like `&lt;font&gt;` and `&lt;color&gt;`, this is a very inefficient way to develop a website. Some websites can easily contain 100+ individual pages, which with their own html code.
+
+
+--
+To solve this problem, CSS was created specifically to display content on a webpage. Now, one can change the look of an entire website just by changing one file. "Make all the links red."
+
+
+--
+Most web designers litter their HTML markup with tons of `classe`s and `id`s to provide "hooks" for their CSS.
+
+
+--
+You can piggyback on these "hooks" to jump to the parts of the markup that contain the data you need.
+
+---
+## CSS Anatomy: Selectors
+
+| Type  | HTML    | CSS Selector   | 
+| :----- | :-------: | -------------:  |
+| Element | `&lt;a&gt;`,     | `a` &lt;br&gt; `p a`| 
+| Class | `&lt;a class="blue"&gt;`  | `.blue` &lt;br&gt; `a.blue` |
+| ID | `&lt;a id="blue"&gt;` | `#blue` &lt;br&gt; `a#blue` |
+
+
+---
+## CSS Anatomy: Hooks
+
+![css-rule](img/css-rule-2.png)
+
+---
+
+```html
+&lt;body&gt;
+	&lt;table class="content"&gt;
+    	&lt;tr id='kurtis'&gt;
+        	&lt;td class='firstname'&gt;
+         		Kurtis
+        	&lt;/td&gt;
+        	&lt;td class='lastname'&gt;
+          		McCoy
+        	&lt;/td&gt;
+    	&lt;/tr&gt;
+    	&lt;tr id='leah'&gt;
+      		&lt;td class='firstname'&gt;
+          		Leah
+        	&lt;/td&gt;
+        	&lt;td class='lastname'&gt;
+          		Guerrero
+     		&lt;/td&gt;
+    	&lt;/tr&gt;
+ 	&lt;/table&gt;
+&lt;/body&gt;
+```
+
+---
+### Challenge 1
+
+Find the CSS selectors for the following elements in the HTML above.
+
+(Hint: There will be multiple solutions for each)
+
+1. The entire table
+
+2. The row containing "Kurtis McCoy"
+
+3. Just the element containing first names
+
+---
+### Challenge 1 Solutions
+
+Find the CSS selectors for the following elements in the HTML above.
+
+(Hint: There will be multiple solutions for each)
+
+1. The entire table
+  * `table`, `.content`
+
+2. The row containing "Kurtis McCoy"
+  * `#kurtis`
+
+3. Just the element containing first names
+  * `.firstname`
+
+
+---
+### Finding Elements with Selector Gadget
+
+* Selector Gadget is a browser plugin to help you find HTML elements. 
+
+* Install Selector Gadget on your browser by following instructions here: https://selectorgadget.com/
+
+* Run Selector Gadget and click on the type of information you want to select. 
+
+* Then click the pieces of information you **don't** want to keep. 
+
+* Do this until only the pieces you want to keep remain highlighted.
+
+* Copy the selector from the bottom pane.
+
+---
+### Putting it all together:
+
+Here's the basic strategy of webscraping:
+
+1. Use Selector Gadget to see how your data is structured.
+
+2. Pay attention to HTML tags and CSS selectors.
+
+3. Pray that there is some kind of pattern.
+
+4. Use R and add-on modules like `RVest` to extract just that data.
+
+
+---
+### Challenge 2
+
+Go to http://rochelleterman.github.io/. Using Selector Gadget,
+
+1. Find the CSS selector capturing all rows in the table.
+
+2. Find the image source URL.
+
+3. Find the HREF attribute of the link.
+
+---
+### Challenge 2 Solutions
+
+Go to http://rochelleterman.github.io/. Using Selector Gadget,
+
+1. Find the CSS selector capturing all rows in the table.
+  * `td`
+  
+2. Find the image source URL.
+  * `https://media.giphy.com/media/8V3RG6l2dp1wQ/giphy.gif`
+  
+3. Find the HREF attribute of the link.
+  * `https://www.youtube.com/watch?v=NCtzkaL2t_Y`
+
+
+
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

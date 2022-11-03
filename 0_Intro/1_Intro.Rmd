@@ -1,0 +1,225 @@
+---
+title: "PLSC 21510/31510: Introduction to Text as Data for Social Science"
+subtitle: "Introduction"
+author: "Rochelle Terman"
+institute: "University of Chicago"
+date: "Fall 2022"
+output:
+  xaringan::moon_reader:
+    css: ["default",  "rladies", "rladies-fonts", "libs/rt.css"]
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+
+---
+
+## Instructors
+
+#### About me
+My name is Rochelle Terman and I'm an Assistant Professor in Political Science. 
+
+- My substantive research is on international norms and human rights. 
+- I also have an interest in computational social science.
+- I am not a methodologist.
+
+#### About Ari
+
+---
+## Core Learning Objectives
+
+#### Ultimate Goal 
+
+>Introduce students to modern computational text analysis techniques and provide an orientation for those wishing to go further with text analysis in their own research.
+
+#### Proximate Goals
+1. Learn about popular methods and techniques involved in modern computational text analysis.
+2. Be able to collect, preprocess, and conduct useful analysis on text data.
+3. Know where to go next in their pursuit of more advanced computational text methods.
+
+---
+## Topics
+
+* String data and regular expressions
+* Web APIs and webscraping
+* Preprocessing texts
+* Lexical diversity, complexity, readability
+* Dictionary methods 
+* Sentiment Analysis 
+* Distinctive Words
+* Text similarity / distances
+* Multidimensional scaling
+* K-means and hierarchical clustering
+* Topic modeling
+* Supervised classification
+* Word and document embeddings
+
+---
+## Topics
+
+#### This course will NOT cover...
+
+* the technical details behind machine learning, such as optimization algorithms and theoretical properties.
+* all text analysis tools, or even most of them. 
+* most natural language processing
+
+
+--
+#### If your goal is to develop new methods, this is probably not the course for you.
+
+
+---
+## Prerequisites
+
+#### Students should have
+
+- at least one class in statistics and/or inference
+- basic knowledge of probability, densities, distributions, statistical tests, hypothesis testing, the linear model, generalized linear models,  maximum likelihood.
+- working knowledge of the `R` programming language.
+- familiarity with how their computer works.
+
+#### Students should NOT have
+
+- previous classes in computational text analysis or text as data
+- previous classes in machine learning
+
+---
+## Alternative courses
+
+__To learn basic programming for social sciences:__
+
+* Computing for Social Science (Soltoff, MACSS)
+
+__To master the cutting edge of content analysis:__
+
+* Computational Content Analysis (Evans, Sociology)
+
+__To learn NLP from a computer science perspective:__
+
+* Natural Language Processing (Tan, CS)
+
+__To learn machine learning:__
+
+* One of the dozens (!) of ML courses on campus
+
+---
+## Course Outline
+
+The course is divided into three main sections: 
+
+1. collecting and processing texts
+2. supervised learning
+3. unsupervised learning
+
+---
+## Course Websites
+
+We will use __Canvas__ to:
+
+- distribute readings
+- distribute/accept assignments
+
+We will use __Piazza__ (available through canvas) to:
+
+- ask and answer questions
+- communicate with one another
+
+We will use __Github__ (github.com/rochelleterman/TAD-F22) to:
+
+- distributed class notes, code, slides, etc.
+
+
+---
+## Course format
+
+#### Semi flipped classroom
+- 1/2 lecture, 1/2 coding in R.
+- Bring your laptop, prepare to close it
+- Work with a friend, especially if you’re computer isn’t working.
+
+### Lab (Fridays, 10:30 - 11:20 AM, Cobb Hall 301)
+- Led by Ari
+
+---
+## Evaluation
+
+This is a graded class based on the following:
+  - Completion of assigned homework (50%)
+  - Participation (25%)
+  - Final project (25%)
+
+If you want to audit, please let me know ASAP.
+
+---
+## Assignments
+
+* There are 4 assignments, generally due every 2 weeks.
+* The first assignment is due in two weeks. 
+* Turn in assignments on Canvas.
+* Work in groups, but submit your own.
+
+---
+## Participation
+
+The class participation portion of the grade can be satisfied in one or more of the following ways:
+
+- attending the lectures,
+- asking and answering questions in class,
+- attending office hours,
+- contributing to class discussion through Piazza,
+- collaborating with the computing community.
+
+---
+## Final Project
+
+Students have two options for class projects:
+
+1. __Data project__: Using the tools we learned in class on your own data of interest.
+
+2. __Tool project__: Create a tutorial on a tool we didn't cover in class. 
+
+Students are required to write a short proposal by __November 3__ (no more than 2 paragraphs) in order to get approval / feedback from the instructors. 
+
+In lieu of a final, we will have a **poster session** where students can present their projects.
+
+---
+## Software
+
+* We will be using the `R` programming language.
+* Installation instructions are github.
+* If you have computer troubles, post the problem on the discussion forums, with as much detail as possible.
+
+---
+## 15 minute rule
+
+We will follow the **15 minute rule** in this class. If you encounter a problem in your assignments, spend 15 minutes troubleshooting the problem on your own. Here are some tips:
+
+- Read the errors!
+- Read the documentation
+- Make it smaller
+- Figure out what changed
+- Check your syntax
+- Print statements are your friend
+
+---
+## Asking for Help
+
+After 15 minutes, if you still cannot solve the problem, **ask for help**. 
+
+We will use Piazza for class-related questions and discussion. You are highly encouraged to ask questions, and answer one another's questions.
+
+1. Include a brief, informative title.
+2. Explain what you're trying to do, and how it failed.
+3. Include a reproducible example.
+
+Here are some helpful guidelines on how to properly ask programming questions:
+
+1. ["How to Ask Programming Questions," ProPublica](https://www.propublica.org/nerds/how-to-ask-programming-questions)
+2. ["How do I ask a good question?" StackOverflow](https://stackoverflow.com/help/how-to-ask)
+3. ["How to properly ask for help" Computing for Social Science](https://cfss.uchicago.edu/faq/asking-questions/)
+
+---
+## Enrollment
+
+Fill out this survey now: https://tinyurl.com/UC-TAD
