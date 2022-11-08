@@ -1,0 +1,184 @@
+---
+title: "Keyword Assited Topic Models - Demonstration"
+author: "PLSC 21510/31510"
+date: "Fall 2022"
+output: html_document
+---
+
+This unit gives a brief overview of the `keyATM` (keyword-assited topic models) package. Please read [the vignette] (https://keyatm.github.io/) for more detail.
+
+## 1. Install
+
+```{r}
+# install first
+# install.packages("keyATM")
+require(keyATM)
+require(quanteda)
+require(tidyverse)
+```
+
+## 3. Preparing texts
+
+Since `keyATM` does not provide preprocessing functions, we recommend users to preprocess texts with `quanteda.` 
+
+```{r}
+data(data_corpus_inaugural)
+data_tokens <- tokens(data_corpus_inaugural,
+                      remove_numbers = TRUE, 
+                      remove_punct = TRUE, 
+                      remove_symbols = TRUE,
+                      remove_separators = TRUE,
+                      remove_url = TRUE) %>%
+  tokens_tolower() %>%
+  tokens_remove(c(stopwords("english"), 
+                  "may", "shall", "can",
+                  "must", "upon", "with", "without")) %>%
+  tokens_select(min_nchar = 3)
+
+# create DFM
+data_dfm <- dfm(data_tokens) %>%
+  dfm_trim(min_termfreq = 5, min_docfreq = 2)
+
+# Finally, `keyATM_read` function reads your data for keyATM.
+keyATM_docs <- keyATM_read(texts = data_dfm)
+summary(keyATM_docs)
+```
+
+## 3. Preparing keywords 
+
+Suppose we are interested in five topics: Government, Congress, Peace, Constitution, and Foreign affairs. We use our substantive knowledge to find keywords for these topics. 
+
+Keywords should be stored in a list object. Each keyword-topic can have a different number of keywords.
+
+```{r}
+keywords <- list(Government     = c("laws", "law", "executive"),
+                 Congress       = c("congress", "party"),
+                 Peace          = c("peace", "world", "freedom"),
+                 Constitution   = c("constitution", "rights"),
+                 ForeignAffairs = c("foreign", "war"))
+```
+
+
+Keywords should appear reasonable times (> 0.1% of the corpus) in the documents. The `visualize_keywords()` function plots the frequency of keywords by topic. Get the actual values with the `values_fig()` 
+
+```{r}
+function.key_viz <- visualize_keywords(docs = keyATM_docs, keywords = keywords)
+key_viz
+values_fig(key_viz) 
+```
+
+## 3. Fitting the model
+
+The next step is to fit a model with the keyATM() function. keyATM has three models:
+
+1. keyATM Base: This is an extension of the most famous topic model, Latent Dirichlet Allocation. If you do not have covariates, this model is your first option.
+
+2. keyATM Covariates: If you have covariates, please use this model. This model uses document-level meta data (document-level covariates) to model topic prevalence (the prior of document-topic distribution).
+
+3. keyATM Dynamic: If you want to explicitly consider time structure, please use this model.
+
+### Base model
+
+Let's use #1 for now.
+
+We pass the output of the `keyATM_read` function and keywords to the `keyATM` function.
+
+Additionally, we need to specify the number of topics without keywords (the no_keyword_topics argument) and model. Since this example does not use covariates or time stamps, base is the appropriate model.
+
+To guarantee the replicability, we recommend to set the random seed in the option argument (see here for other options). The default number of iterations is 1500.
+
+```{r}
+out <- keyATM(docs              = keyATM_docs,    # text input
+              no_keyword_topics = 5,              # number of topics without keywords
+              keywords          = keywords,       # keywords
+              model             = "base",         # select the model
+              options           = list(seed = 250))
+```
+
+### Saving the model
+Once you fit the model, you can save the model with the save() function for replication. We strongly recommend to save the fitted model.
+
+```{r}
+save(out, file = "SAVENAME.rds")
+
+# To load the model, you can use readRDS() function.
+out <- readRDS(file = "SAVENAME.rds")
+```
+
+### Interpreting results
+
+The `top_words()` function returns a table of top words for each of estimated topics. Keywords assigned to a keyword topic are suffixed with a check mark. Keywords from another keyword topic are labeled with the topic id of that category.
+
+In the table below, "law", "laws", and "executive" are keywords of the Government topic, while "peace" appears in top words of the Other_3 topic, it is a keyword of the peace topic.
+
+```{r}
+top_words(out)
+```
+
+To explore documents that are highly associated with each topic, the `top_docs()` function returns a table of document indexes in which a topic has high proportion.
+
+The table below indicates, for example, that the ninth document in the corpus has the highest proportion of the Government topic among all other documents.
+
+```{r}
+top_docs(out)
+```
+
+Researchers may want to obtain the entire document-topic distribution and topic-word distribution. The output of the `keyATM()` function contains both quantities.
+
+```{r eval=FALSE}
+out$theta  # Document-topic distribution
+out$phi    # Topic-word distribution
+```
+
+## Keyword Dynamic
+
+Researchers are often interested in investigating how the prevalence of topics change over time. Researchers should construct a numeric or an integer vector of time stamps after preprocessing texts.
+
+Below,tThe time index (`Period`) should start from 1 and increment by 1 (ascending order). To properly process date, please consider using the `lubridate` package.
+
+```{r eval=FALSE}
+# Get meta information (time stamp)
+vars <- docvars(data_corpus_inaugural)
+head(vars)
+
+# Divide by a decade
+# Timestamp should start with 1 (the variable "Period")
+vars_period <- vars %>%
+  as_tibble() %>%
+  mutate(Period = (vars$Year - 1780) %/% 10 + 1) 
+head(vars_period)
+```
+
+We pass the time index to the `keyATM()` function, specifying the number of hidden states with the `num_states` in the `model_settings` argument.
+
+```{r}
+out <- keyATM(docs              = keyATM_docs,                         
+              no_keyword_topics = 3,                                   
+              keywords          = keywords,                      
+              model             = "dynamic",                           
+              model_settings    = list(time_index = vars_period$Period,
+                                       num_states = 5),                
+              options           = list(seed = 250))
+```
+
+We can use the` top_words()`, `top_docs()` functions as in the base `keyATM.`
+
+```{r}
+top_words(out)
+top_docs(out)
+```
+
+Finally, we can plot the time trend of topics with the `plot_timetrend()` function. With the time_index_label argument, you can label each time index. Note that store_theta option in the `keyATM()` function should be TRUE to show 90% credible intervals.
+
+```{r}
+out <- keyATM(docs              = keyATM_docs,                         
+              no_keyword_topics = 3,                                   
+              keywords          = keywords,                      
+              model             = "dynamic",                           
+              model_settings    = list(time_index = vars_period$Period,
+                                       num_states = 5),                
+              options           = list(seed = 250, store_theta = TRUE))
+
+fig_timetrend <- plot_timetrend(out, show_topic = c(1:5), time_index_label = vars$Year, xlab = "Year")
+fig_timetrend
+```

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>PCA</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="PLSC 21510/31510" />
+    <script src="libs/header-attrs-2.11/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies-fonts.css" rel="stylesheet" />
+    <link rel="stylesheet" href="libs/rt.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# PCA
+### PLSC 21510/31510
+### Spring 2022
+
+---
+
+
+
+
+
+
+
+### Exploring Countries
+
+&lt;img src="img/map.png" width="100%" style="display: block; margin: auto;" /&gt;
+
+---
+### Exploring Countries
+
+Collected data on over 100 countries, including:
+
+- GDP per capita
+- Population
+- Regime type
+- Military expenditures
+- ...  
+ 
+What can we do to understand our data better?
+
+---
+### Dimensionality Reduction
+
+**Problem**: Suppose that we wish to visualize `\(n\)` observations with measurements on a set of `\(p\)` features: `\(X_1, X_2, ... ,X_p\)` as part of exploratory data analysis. How do we do it? 
+
+
+--
+**Scatterplots:**
+
+- When `\(p\)` = 2, create a two-dimensional scatterplot 
+
+--
+- When `\(p\)` = 3: create 3 scatterplots ( `\(X_1 \text{ by } X_2, X_1 \text{ by } X_3, X_2 \text{ by } X_3\)` ),  
+
+--
+- When `\(p\)` = 10: create 45 plots??? 
+
+--
+- When `\(p\)` is large `\(\leadsto\)` impossible to look at all of them! 
+ 
+ 
+ 
+--
+**Solution**: We want to find a low-dimensional representation of the data that captures as much information as possible. This is called .accent[dimensionality reduction]. 
+
+---
+### Why Dimensionality Reduction?
+
+Can be used for:
+
+- data summary / exploration
+- data visualization (of observations, or variables)
+- producing features for use in supervised learning problems. 
+- data compression (use less memory)
+
+
+---
+### Game Plan
+
+.accent[Goal]: summarize data in a lower-dimensional space
+
+.accent[Method]: Principal-Component Analysis
+
+.accent[Key Terms]:
+- Dimensionality Reduction
+- Projection
+- Principle Component Analysis (PCA)
+- Centered
+- Scaled
+- PC loadings
+- PC scores
+- Biplot
+- Scree Plot
+- Proportion of variance explained (PVE)
+- Elbow
+
+
+---
+### What does it mean to reduce data?
+
+How do we reduce this data from 2 dimensions to 1 dimension?
+
+&lt;img src="img/Plot1.jpg" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+### What does it mean to reduce data?
+
+Identify a new dimension on which to .accent[project] (aka "map" or "embed") the data.
+
+&lt;img src="img/Plot9.jpg" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+### What does it mean to reduce data?
+
+.accent[Projecting] a point simply means finding the location on the line which is closest to the point.
+
+&lt;img src="img/Plot12.jpg" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+### What does it mean to reduce data?
+
+We can now represent each point with this new feature ( `\(z_1\)` ).
+
+2 dimensions (on `\(x_1\)` and `\(x_2\)`) `\(\rightarrow\)` 1 dimension (on `\(z_1\)` )
+
+&lt;img src="img/Plot12.jpg" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+### From 3D to 2D 
+
+&lt;img src="img/3dreduce.png" width="100%" style="display: block; margin: auto;" /&gt;
+
+---
+### Principle Component Analysis
+
+.accent[Principle Component Analysis (PCA)] is a popular way to reduce dimensionality. 
+
+
+- Each of the `\(n\)` observations lives in `\(p\)` -dimensional space, but not all of these dimensions are equally interesting. 
+
+
+--
+- PCA seeks a small number of dimensions that are as interesting as possible.
+
+
+--
+- By *interesting*, we mean the amount that the observations vary along each dimension. 
+
+
+---
+### What are principle components?
+
+PCA finds directions of .accent[maximal variance.]
+
+
+--
+- **First** principal component: direction along which the observations vary the most. 
+
+--
+- **Second** component: direction of second greatest variance, and is .accent[orthogonal] (perpendicular) to the first component. 
+
+--
+- **Each succeeding component** in turn has the highest variance possible under the constraint that it is orthogonal to the preceding components. 
+- Finds up to `\(p\)` unique components. 
+
+???
+If we projected the points onto that line, and calculated the variance, the variance would be highest. Projecting points just onto x dimension, computing variance is something that captures distribution between here and here. Similarly for y axes. Just looking at second feature y. But if we chose a line that was 45 degrees, we would have a lot greater variance
+
+---
+### Another interpretation of PCs
+
+The .accent[first principal component] defines the line that is as close as possible to the data (using average squared Euclidean distance).
+
+&lt;img src="img/popad.png" width="100%" style="display: block; margin: auto;" /&gt;
+
+---
+### What are principle components?
+
+&lt;img src="img/pca.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+### PCA Inputs
+
+For PCA to work, the features should be .accent[preprocessed] in a particular way. 
+
+--
+1. .accent[Centered] to have mean zero (i.e. de-meaning).
+  - Compute mean of each feature.
+  - Subtract each value of a feature by the mean of that feature.
+  - `colMeans(feature) = 0` 
+
+--
+2. .accent[Scaled] for comparability.
+  - Different features on different scales or units of measurement (number of bedrooms versus price of house)
+  - Rescale variables to have comparable ranges of values 
+  - `standard deviation(feature) = 1`
+
+
+---
+### PCA Outputs
+
+K principle components are computed via eigen decomposition. 
+
+
+- `\(\boldsymbol{w}_{k}\)` : Principal component .accent[loadings]: Unit vector defining direction of given component (length of `\(p\)` ). In other words: How much is given component weighted towards a each variable?  
+
+$$
+`\begin{eqnarray}
+\boldsymbol{w}_{1} &amp; = &amp; (w_{1}, w_{2}, \dots, w_{p}) \nonumber  \\ 
+\boldsymbol{w}_{k} &amp; = &amp; (w_{1k}, w_{2k}, \dots, w_{pk}) \nonumber  
+\end{eqnarray}`
+$$
+
+
+- `\(\boldsymbol{z}_{i}\)`: Principal component .accent[scores]: projected values for each observation given component (length of `\(n\)`)
+
+$$
+`\begin{eqnarray}
+\boldsymbol{z}_{1} &amp; = &amp; (z_{1}, z_{2}, \dots, z_{n}) \nonumber \\ 
+\boldsymbol{z}_{k} &amp; = &amp; (z_{1k}, z_{2k}, \dots, z_{nk}) \nonumber  
+\end{eqnarray}`
+$$
+
+- Principal component .accent[eigenvalues]: defines *interestness* of each component.
+
+
+---
+### An Example: USArrests
+
+|            | **Murder** | **Assault** | **UrbanPop** | **Rape** |
+|:--------------:|:----------:|:-----------:|:------------:|:--------:|
+| **Alabama**    | 13.20      | 236         | 58           | 21.20    |
+| **Alaska**     | 10.00      | 263         | 48           | 44.50    |
+| **Arizona**    | 8.10       | 294         | 80           | 31.00    |
+| **Arkansas**   | 8.80       | 190         | 50           | 19.50    |
+| **California** | 9.00       | 276         | 91           | 40.60    |
+| **Colorado**   | 7.90       | 204         | 78           | 38.70    |
+
+
+---
+### An Example: USArrests
+
+1. Standardize each variable to have mean of 0 and standard deviation 1. 
+2. Compute 2 principle components. For each PC:
+  - Loading vector: length `\(p = 4\)` .
+  - Score vector: length `\(n = 50\)` . 
+3. Plot PC1 against PC2.
+
+---
+### Biplot
+
+&lt;img src="img/arrests.png" width="90%" style="display: block; margin: auto;" /&gt;
+
+???
+The first two principal components for the USArrests data. 
+The blue state names represent the scores for the first two principal components. 
+The orange arrows indicate the first two principal component loading vectors (with axes on the top and right). 
+For example, the loading for Rape on the first component is 0.54, and its loading on the second principal component 0.17 (the word Rape is centered at the point (0.54, 0.17)). 
+This figure is known as a biplot, because it displays both the principal component scores and the principal component loadings.
+PC1: corresponds to a measure of overall rates of serious crimes. Assault, Rape, and Murder area all correlated with each other.
+PC2: corresponds to the level of urbanization of the state
+
+---
+### How much variation is explained by each principal component?
+
+.accent[Scree Plot]: Visualize .accent[proportion of variance explained (PVE)] by each component 
+
+&lt;img src="img/scree.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+### How many components do we need?
+
+We choose the smallest number of principal components required to explain a sizable amount of variation in the data. 
+
+&lt;/br&gt;
+--
+Eyeball the scree plot, and look for the .accent[elbow] (the point at which the proportion of variance explained by each subsequent principal component drops off.)
+
+---
+### Related ideas: Factor analysis
+
+|             |                                        PCA                                        |                                                        FA                                                        |                                                 |
+|-------------|:---------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------------:|-------------------------------------------------|
+| **Goal**        | Reduce dimensionality by decomposing the data into a smaller number of components |        Understand the underlying 'cause' that explain the covariances or correlations between  variables.         |
+| **Assumptions** | None                                                                              | Latent variables (or factors) exist in the given data.                                                           |                                                 |
+| **Meaning**     | Components = linear combinations of the original variables.                       | Original variables = linear combinations of the factors.                                                         |                                                 |
+| **Model**       | Components are orthogonal linear combinations that maximize total variance.       | Factors are linear combinations that maximize the shared portion of the variance--underlying "latent constructs" |                                                 |
+  
+
+---
+### Related ideas: 
+
+#### Correspondance analysis
+
+Used when data is categorical.
+
+
+--
+#### Multidimensional Scaling
+
+Visualizes data by displaying relative positions of observations that proximate the pairwise distances between them.
+
+---
+class: inverse, title-slide, middle, center
+
+# Ideological Scaling
+
+---
+### Supervised Approach: Wordscores (Laver, Benoit &amp; Garry, 2003)
+
+--
+#### Motivation: Widespread interest in scaling political texts relative to one another
+- are parties moving together over time, such that manifestos are converging?
+- do members of parliament speak in line with their constituency’s ideology? 
+- Roll calls sometimes uninformative.
+
+
+--
+#### Workflow:
+
+--
+1. Begin with a reference set (training set) of texts that have known positions.
+  - e.g. we find a 'left' document and give it score −1; and a 'right' document and give it score 1 
+
+
+--
+2. Generate word scores from these reference texts
+
+
+--
+3. Score unlabeled texts using those word scores, possibly transform  scores to original metric (-1 to 1).
+
+---
+### Supervised Approach: Wordscores (Laver, Benoit &amp; Garry, 2003)
+
+&lt;img src="img/wordscores.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+### Unsupervised Approach: Wordfish (Slapin &amp; Proksch, 2008)
+
+--
+#### Unsupervised: no need for reference texts
+- assumes speaker has a position in low-dimensional political space `\(leadsto\)` rate at which words are used.
+- word usage is independent of other words (naive Bayes assumption), drawn from Poisson distribution.
+- German party manifestos over time.
+
+
+--
+#### Workflow:
+
+--
+1. Begin with an unlabeled set of texts that are thought to have some ideological position
+
+
+--
+2. Estimate:
+  - `\(\beta_p\)` word-specific weight: importance of this word in discriminating between party positions
+  - `\(\theta_i\)` estimate of party's position in a given year
+
+---
+### Unsupervised Approach: Wordfish (Slapin &amp; Proksch, 2008)
+
+&lt;img src="img/wordfish1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+### Unsupervised Approach: Wordfish (Slapin &amp; Proksch, 2008)
+
+.pull-left[
+&lt;img src="img/wordfish2.png" width="70%" style="display: block; margin: auto;" /&gt;
+]
+
+
+--
+.accent[y-axis] is word fixed effects: words with high fixed effects have zero weight (very common).
+
+.accent[x-axis] is word weights: those with high (absolute) weights discriminate well.
+
+---
+### Unsupervised Approach: Cautions
+
+.accent[Ideological dominance assumption]: don't assume wordfish captures position on ideological (e.g., left--right) dimension.
+- German party platforms: heavily ideological speech `\(\leadsto\)` reliable position estimates. 
+- Senate press releases: nonideological speech `\(\leadsto\)` some other dimension (e.g, position taking--credit claiming.
+
+
+---
+class: middle
+
+## To `\(\texttt{R}\)` Code!
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

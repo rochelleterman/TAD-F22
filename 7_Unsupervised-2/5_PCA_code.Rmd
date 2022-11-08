@@ -1,0 +1,159 @@
+---
+title: "PCA - Demonstration"
+author: "PLSC 21510/31510"
+date: "Spring 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This unit gives a brief demonstration of principle component analysis on text. We will be using a section of Machiavelli's *Prince* as our corpus. Since The Prince is a monograph, we have already "chunked" the text, so that each short paragraph or "chunk" is considered a "document."
+
+## 1. Prepare 
+
+### 1.1 
+
+Load the following packages to get started:
+
+```{r}
+require(quanteda)
+require(quanteda.textmodels)
+require(quanteda.textplots)
+require(tidyverse)
+```
+
+
+### 1.2
+
+Let's load and preprocess the corpus using these steps:
+- Discard punctuation, capitalization, stop words
+- Apply the porter stemmer to the documents
+- Subset to 500 most common unigrams
+- Normalize the dfm
+
+We will work with a normalized version of the term document matrix. That is we will divide each row by the total number of words in the top 500 unigrams used
+
+```{r}
+mach_corp <-read.csv("data/mach.csv", header=TRUE) %>% # read in CSV file
+  separate(doc_id, into = c("before", "doc_id")) %>% # preprocess doc_id
+  select(-before) %>%
+  corpus(text_field = "text")
+
+mach_dfm <- mach_corp %>%
+  tokens(split_hyphens = T,
+         remove_punct = TRUE,
+         remove_numbers = TRUE,
+         remove_symbols = TRUE) %>%
+  tokens_tolower(keep_acronyms = F) %>% # change to T to keep. 
+  tokens_remove(pattern = stopwords("en")) %>%
+  tokens_wordstem() %>%
+  dfm()
+
+# keep top 500 terms
+mach_dfm <- dfm_select(mach_dfm, names(topfeatures(mach_dfm, n = 500)))
+
+# normalize
+mach_dfm <- dfm_weight(mach_dfm, scheme  = "prop")
+
+head(mach_dfm)
+```
+
+
+## 2. Computing PCA
+
+We'll be using the `prcomp` function to conduct PCA. There are many other functions that compute PCA, such as `princomp`. They all have slightly different functionality.
+
+### 2.1 
+
+Use `prcomp` to compute the principle components. `prcomp` contains options that automatically `scale` and `center` our data for us. How helpful!
+
+```{r}
+# compute PCA
+pca1 <- prcomp(mach_dfm, scale=TRUE, center = TRUE)
+```
+
+### 2.2
+
+The `summary` method describes the importance of the PCs. The first row describes again the standard deviation (i.e., the square roots of the eigenvalue) associated with each PC. Larger numbers means this component is more "interesting" or "important" in the sense that it captures more variation.
+
+The second row shows the proportion of the variance in the data explained by each component while the third row describe the cumulative proportion of explained variance. 
+
+How much variance is captured by the first two principal components?
+
+```{r}
+summary(pca1)
+```
+
+### 2.3 
+
+We can retrive the loadings and scores with:
+
+```{r}
+# loadings are contained in the 'rotation' object.
+loadings <- pca1$rotation
+loadings[1:5, 1:5]
+
+# scores are contained in the 'x' object.
+scores <- pca1$x
+scores[1:5, 1:5]
+```
+
+### 2.4
+
+We can call `plot` on our PCA object, which returns a scree plot of the variances (y-axis) associated with the PCs (x-axis). The figure below is useful to decide how many PCs to retain for further analysis. 
+
+```{r}
+# scree plot
+plot(pca1, type="l",main="Number of Components v. Variance Explained")
+```
+
+Eyeing the plot, how many principal compontents do you think we should keep?
+
+## 3. Using PCA to visualize our data
+
+### 3.1
+
+The `biplot` method visualizes the first two PC loadings and scores. 
+```{r}
+# biplot
+biplot(pca1)
+```
+
+Since this is pretty messy, let's use another plotting method....
+
+### 3.2 ggplot
+
+We can also use custom ggplots to make plot the two-dimensional embedding of the text documents.
+```{r}
+# scores
+scores = as.data.frame(pca1$x)
+ggplot(data = scores, aes(x = PC1, y = PC2, label = rownames(scores))) +
+  geom_hline(yintercept = 0, colour = "gray65") +
+  geom_vline(xintercept = 0, colour = "gray65") +
+  geom_text(colour = "blue", alpha = 0.8, size = 4) +
+  ggtitle("PCA Plot")
+
+# loadings
+rotation <- as.data.frame(pca1$rotation)
+ggplot(data = rotation, aes(x = PC1, y = PC2, label = rownames(rotation))) +
+  geom_hline(yintercept = 0, colour = "gray65") +
+  geom_vline(xintercept = 0, colour = "gray65") +
+  geom_text(colour = "red", alpha = 0.8, size = 4) +
+  ggtitle("PCA Rotation Plot")
+```
+
+Examining the loadings and scores, label the two largest principal components. What does this embedding suggest about the primary variation this representation of the Prince?
+
+## 4. Wordfish
+
+Check out the [quanteda tutorial on wordfish](https://tutorials.quanteda.io/machine-learning/wordfish/) and read the documentation for `textmodel_wordfish`. Then apply wordfish to the Prince. How would you interpret the scaled dimension? Comparing the output to PCA, what differences do you notice?
+
+**Hint**: You might have to re-process the DFM.
+
+```{r}
+# YOUR CODE HERE
+```
+
+
