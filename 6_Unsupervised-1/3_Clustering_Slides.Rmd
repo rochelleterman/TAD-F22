@@ -415,11 +415,6 @@ class: middle, center, title-slide, inverse
 1. A document term matrix (or any multidimensional dataset)
 2. $N \times N$ distance matrix: Euclidean, cosine, etc... 
 
-
---
-Then the $\boldsymbol{K}$ -means algorithm will assign each observation into exactly one of the $\boldsymbol{K}$ clusters. 
-
-
 --
 **Outputs**
 
