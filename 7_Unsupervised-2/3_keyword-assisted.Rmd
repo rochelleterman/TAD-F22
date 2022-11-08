@@ -62,20 +62,20 @@ keywords <- list(Government     = c("laws", "law", "executive"),
 Keywords should appear reasonable times (> 0.1% of the corpus) in the documents. The `visualize_keywords()` function plots the frequency of keywords by topic. Get the actual values with the `values_fig()` 
 
 ```{r}
-function.key_viz <- visualize_keywords(docs = keyATM_docs, keywords = keywords)
+key_viz <- visualize_keywords(docs = keyATM_docs, keywords = keywords)
 key_viz
 values_fig(key_viz) 
 ```
 
 ## 3. Fitting the model
 
-The next step is to fit a model with the keyATM() function. keyATM has three models:
+The next step is to fit a model with the `keyATM()` function. `keyATM` has three models:
 
-1. keyATM Base: This is an extension of the most famous topic model, Latent Dirichlet Allocation. If you do not have covariates, this model is your first option.
+1. `keyATM` Base: This is an extension of the most famous topic model, Latent Dirichlet Allocation. If you do not have covariates, this model is your first option.
 
-2. keyATM Covariates: If you have covariates, please use this model. This model uses document-level meta data (document-level covariates) to model topic prevalence (the prior of document-topic distribution).
+2. `keyATM` Covariates: If you have covariates, please use this model. This model uses document-level meta data (document-level covariates) to model topic prevalence (the prior of document-topic distribution).
 
-3. keyATM Dynamic: If you want to explicitly consider time structure, please use this model.
+3. `keyATM` Dynamic: If you want to explicitly consider time structure, please use this model.
 
 ### Base model
 
