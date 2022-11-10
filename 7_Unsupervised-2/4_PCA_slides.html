@@ -4,7 +4,7 @@
     <title>PCA</title>
     <meta charset="utf-8" />
     <meta name="author" content="PLSC 21510/31510" />
-    <script src="libs/header-attrs-2.11/header-attrs.js"></script>
+    <script src="libs/header-attrs-2.16/header-attrs.js"></script>
     <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
     <link href="libs/remark-css-0.0.1/rladies.css" rel="stylesheet" />
     <link href="libs/remark-css-0.0.1/rladies-fonts.css" rel="stylesheet" />
@@ -25,7 +25,12 @@ class: center, middle, inverse, title-slide
 
 
 
+class: inverse, title-slide, middle, center
 
+## Principal Component Analysis
+
+
+---
 ### Exploring Countries
 
 &lt;img src="img/map.png" width="100%" style="display: block; margin: auto;" /&gt;
@@ -89,7 +94,7 @@ Can be used for:
 .accent[Key Terms]:
 - Dimensionality Reduction
 - Projection
-- Principle Component Analysis (PCA)
+- Principal Component Analysis (PCA)
 - Centered
 - Scaled
 - PC loadings
@@ -136,9 +141,9 @@ We can now represent each point with this new feature ( `\(z_1\)` ).
 &lt;img src="img/3dreduce.png" width="100%" style="display: block; margin: auto;" /&gt;
 
 ---
-### Principle Component Analysis
+### Principal Component Analysis
 
-.accent[Principle Component Analysis (PCA)] is a popular way to reduce dimensionality. 
+.accent[Principal Component Analysis (PCA)] is a popular way to reduce dimensionality. 
 
 
 - Each of the `\(n\)` observations lives in `\(p\)` -dimensional space, but not all of these dimensions are equally interesting. 
@@ -153,7 +158,7 @@ We can now represent each point with this new feature ( `\(z_1\)` ).
 
 
 ---
-### What are principle components?
+### What are principal components?
 
 PCA finds directions of .accent[maximal variance.]
 
@@ -179,7 +184,7 @@ The .accent[first principal component] defines the line that is as close as poss
 &lt;img src="img/popad.png" width="100%" style="display: block; margin: auto;" /&gt;
 
 ---
-### What are principle components?
+### What are principal components?
 
 &lt;img src="img/pca.png" width="70%" style="display: block; margin: auto;" /&gt;
 
@@ -204,7 +209,7 @@ For PCA to work, the features should be .accent[preprocessed] in a particular wa
 ---
 ### PCA Outputs
 
-K principle components are computed via eigen decomposition. 
+K principal components are computed via eigen decomposition. 
 
 
 - `\(\boldsymbol{w}_{k}\)` : Principal component .accent[loadings]: Unit vector defining direction of given component (length of `\(p\)` ). In other words: How much is given component weighted towards a each variable?  
@@ -230,31 +235,34 @@ $$
 
 
 ---
-### An Example: USArrests
+### An Example: Countries
 
-|            | **Murder** | **Assault** | **UrbanPop** | **Rape** |
-|:--------------:|:----------:|:-----------:|:------------:|:--------:|
-| **Alabama**    | 13.20      | 236         | 58           | 21.20    |
-| **Alaska**     | 10.00      | 263         | 48           | 44.50    |
-| **Arizona**    | 8.10       | 294         | 80           | 31.00    |
-| **Arkansas**   | 8.80       | 190         | 50           | 19.50    |
-| **California** | 9.00       | 276         | 91           | 40.60    |
-| **Colorado**   | 7.90       | 204         | 78           | 38.70    |
+Collected data on over 100 countries, including:
 
+1. `idealpoint`: idealpoint preference based on UN votes, relative to US.
+2. `polity2`: regime type (autocatic&lt;---&gt;democratic)
+3. `democ`: Institutionalized Democracy
+4. `unreg`: UN region 
+5. `physint`: CIRI physical integrity score
+6. `speech`: CIRI freedom of speech score
+7. `gdp.pc.wdi`: GDP per capita, current US$ (World Bank Development Indicators)
+8. `pop.wdi`: WDI population mid-year estimates (World Bank Development Indicators), logged
+9. `cinc`: Composite Index of Military Capabilities from Correlates of War
+10. `domestic9`: Domestic Conflict / Stability Index, from Banks 2012.
 
 ---
-### An Example: USArrests
+### An Example: Countries
 
 1. Standardize each variable to have mean of 0 and standard deviation 1. 
-2. Compute 2 principle components. For each PC:
-  - Loading vector: length `\(p = 4\)` .
-  - Score vector: length `\(n = 50\)` . 
+2. Compute 2 principal components. For each PC:
+  - Loading vector: length `\(p = 10\)` .
+  - Score vector: length `\(n = 107\)` . 
 3. Plot PC1 against PC2.
 
 ---
 ### Biplot
 
-&lt;img src="img/arrests.png" width="90%" style="display: block; margin: auto;" /&gt;
+&lt;img src="img/countries_pca.jpg" width="90%" style="display: block; margin: auto;" /&gt;
 
 ???
 The first two principal components for the USArrests data. 
@@ -280,6 +288,22 @@ We choose the smallest number of principal components required to explain a siza
 &lt;/br&gt;
 --
 Eyeball the scree plot, and look for the .accent[elbow] (the point at which the proportion of variance explained by each subsequent principal component drops off.)
+
+---
+### Example: Analyzing Indian Treaties
+
+.small[Spirling, Arthur. "U.S. Treaty Making with American Indians: Institutional Change and Relative Power, 1784–1911." American Journal of Political Science 56, no. 1 (2012): 84–97.]
+
+
+--
+**Kernel PCA**: a single dimension characterizes treaties as more or less "harsh" in land and resource cession terms.
+
+&lt;img src="img/Indian1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+### Example: Analyzing Indian Treaties
+
+&lt;img src="img/Indian2.png" width="70%" style="display: block; margin: auto;" /&gt;
 
 ---
 ### Related ideas: Factor analysis
@@ -308,7 +332,17 @@ Visualizes data by displaying relative positions of observations that proximate 
 ---
 class: inverse, title-slide, middle, center
 
-# Ideological Scaling
+## Ideological Scaling
+
+---
+### Ideological Scaling
+
+Political actors are often organized on a left-right spectrum, but these positions are **unobservable** and must therefore be treated as a **latent variable** in empirical work. 
+
+&lt;/br&gt;
+
+--
+How do we measure ideology?
 
 ---
 ### Supervised Approach: Wordscores (Laver, Benoit &amp; Garry, 2003)
