@@ -1,7 +1,7 @@
 ---
 title: "Scaling"
 author: "PLSC 21510/31510"
-date: "Spring 2022"
+date: "Fall 2022"
 output:
   xaringan::moon_reader:
     css: ["default",  "rladies", "rladies-fonts", "libs/rt.css"]
