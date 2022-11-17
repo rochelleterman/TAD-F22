@@ -267,7 +267,7 @@ We want to devise a way to do cross validation. With LASSO we will have a canned
 
 (I provide instructions below on how to manually perform cross validation---helpful for applying the procedure to many other methods.)
 
-To perform cross validation with glmnet we use cv.glmnet
+To perform cross validation with `glmnet` we use `cv.glmnet`
 
 ```{r}
 lasso_cv <- cv.glmnet(x = train, y = train_label)
@@ -275,7 +275,7 @@ lasso_cv <- cv.glmnet(x = train, y = train_label)
 
 You can specify the loss function (with `type.measure =` ). For example, for classification you might pick accuracy.  The default is MSE. `nfolds` allows you to set the number of folds used for cross validation.
 
-There are lots of built in functions in cv.glmnet. Try plotting the cv.glmnet object you created. This shows how the Mean-Squared Error for the cross validated predictions changes across different values of lambda.
+There are lots of built in functions in `cv.glmnet`. Try plotting the `cv.glmnet` object you created. This shows how the Mean-Squared Error for the cross validated predictions changes across different values of lambda.
 
 ```{r}
 plot(lasso_cv)
@@ -316,9 +316,9 @@ How well did cross validation do in selecting the appropriate value of lambda?
 
 ## Bonus section: your own cross validation 
 
-I fit my own cross validations using the following procedure:
+You can fit your own cross validations using the following procedure:
 
-1) Use the sample function with replace = T to assign each observation to a fold
+1) Use the sample function with `replace = T` to assign each observation to a fold
 2) Use a for loop to train on the K-1 subsets of the data
 3) Predict for the held out data for that round
 4) I then store those out of sample predictions
@@ -337,8 +337,8 @@ Now, let's write a for loop for fitting the model:
 # note, that the top 10 words might change depending on the cross validation run
 store_pred<- rep(NA,nrow(train))
 for(z in 1:10){
-  cv_train_set<- which(folds!=z) # these are the ``training data"
-  cv_test_set<- which(folds==z) # these are the ``test data"
+  cv_train_set<- which(folds!=z) # these are the "training data"
+  cv_test_set<- which(folds==z) # these are the "test data"
   counts<- apply(train[cv_train_set, ], 2, sum)
   top_10 <- order(counts, decreasing=T)[1:10]
   reg1<- lm(train_label[cv_train_set]~., data = as.data.frame(train[cv_train_set, top_10]))
