@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Word Embeddings</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="PLSC 21510/31510" />
+    <script src="libs/header-attrs-2.16/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rladies-fonts.css" rel="stylesheet" />
+    <link rel="stylesheet" href="libs/rt.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# Word Embeddings
+]
+.author[
+### PLSC 21510/31510
+]
+.date[
+### Fall 2022
+]
+
+---
+
+
+
+
+
+
+
+## What are word embeddings?
+
+**Word embeddings**: vectors of numbers that represent the meaning of a word.
+
+| Word    | `\(D_1\)`          | `\(D_1\)`            | `\(D_1\)`           | `\(D_1\)`           |           `\(D_1\)`  |           `\(D_1\)`  | ... | `\(D_{300}\)` 
+|---------|-------------|--------------|-------------|-------------|-------------:|-------------:|-----|
+| France  | 0.015  | 0.018  | 0.083  | 0.009 |  0.016 |  0.007| `\(\dots\)` | -0.012 |
+| Germany | 0.060  | 0.046  | 0.063  | 0.002 | -0.063 | -0.026 | `\(\dots\)` | -0.093 |
+| wine    | -0.042 | -0.031 | -0.054| 0.033 |  0.002 |  0.048 | `\(\dots\)` | 0.056 |
+
+
+--
+**Characteristics**:
+- each word is represented as a vector in a high-dimensional space (typically 300 dimensions)
+- each continuous value (or "weight") captures a dimension of the word's meaning 
+- semantically similar words are close together in this space
+- dissimilar words far away
+- Ex: "car" is close to "wheel", while distance from "banana".
+
+---
+### Why represent words as vectors?
+
+**Fully relational**: words only have meaning in relation to other words. Parallels post-structuralist models of language.
+
+
+--
+Vectors lend themselves to **mathematical operations**, e.g. adding and subtracting.
+
+
+---
+### Why represent words as vectors?
+
+#### 1. Finding similar words
+
+
+--
+Most similar vectors to the `talk` vector  (using cosine similarity):
+- `talking`, 0.6718707084655762
+- `speak`, 0.6052849292755127
+- `talked`, 0.5983412265777588
+- `tell`, 0.5425027012825012
+- `conversation`, 0.5362381935119629
+- `hear`, 0.5258073806762695
+- `know`, 0.5096373558044434
+- `think`, 0.4957665205001831
+- `listen`, 0.4826739430427551
+- `discuss`, 0.47418320178985596
+
+
+--
+Helpful for stemming, lemmatizing, etc.
+
+
+---
+### Why represent words as vectors?
+
+#### 2. Disambiguation
+
+
+--
+The `bank` vector captures multiple meanings of the word: financial institution, side of a river.
+
+To isolate the financial meaning, remove the river meaning dimensions from the bank vector, keeping the financial bank meaning dimensions:
+
+&gt; `bank` - `river` `\(\approx\)` the financial institution
+
+
+
+--
+Or, add vectors to approximate the vector capturing their conjoint meaning.
+
+&gt; `united` + `states` `\(\approx\)` the country `United States`
+
+
+
+---
+### Why represent words as vectors?
+
+#### 3. Analogies (claim to fame)
+
+
+--
+Identify analogies using a simple vector offset method based on cosine distance.
+
+&gt; `king` - `man` + `woman` `\(\approx\)` `queen`
+
+We can subtract one meaning from the word vector for `king` (maleness), add another meaning (femaleness), and show that this new word vector (`king — man + woman`) maps most closely to the word vector for `queen.`
+
+---
+### Analogous reasoning
+
+--
+&lt;img src="img/bail.png" width="100%" style="display: block; margin: auto;" /&gt;
+
+
+--
+| Query (a is to b as c is to d?)    | Answer (d)    |
+|------------------------------------|---------------|
+| `king`:`queen`; `man`: ?              | `woman`         |
+| `smart`:`smarter`; `strong`: ?        | `stronger`      |
+| `Tokyo`:`Japan`; `Paris`:?            | `France`        |
+| `Google`:`Larry Page`; `Microsoft`: ? | `Steve Ballmer` |
+
+
+---
+### What do these dimensions represent?
+
+- each dimension represents a "meaning" 
+- a word's weight on that dimension captures its association with that meaning. 
+
+
+--
+&lt;img src="img/dimension.png" width="85%" style="display: block; margin: auto;" /&gt;
+
+
+--
+**Warning: This is huge simplification!** Usually, dimensions do not hold such clearly defined meanings.
+
+
+---
+## Where do word vectors come from?
+
+Firth’s (1957) *distributional hypothesis*:
+
+&gt; “You shall know a word by the company it keeps”
+
+&lt;/br&gt;
+
+--
+Words that share similar .accent[contexts] tend to have similar meanings.
+
+
+--
+.accent[Contexts] refers to surrounding words.
+
+
+
+--
+
+.accent[Context Window]: N words before and after target/center word.
+
+&lt;img src="img/context_window.png" width="85%" style="display: block; margin: auto;" /&gt;
+
+---
+### Word2Vec
+
+**Supervised task**: for any given word, predict whether another word is likely to appear nearby (i.e., in the context window).
+
+
+--
+The model is **trained** on word, context pairings for every word in the corpus. 
+
+
+--
+Here's an example with a small window size of 2.
+
+&lt;img src="img/skipgram.png" width="80%" style="display: block; margin: auto;" /&gt;
+
+[Source](http://mccormickml.com/2016/04/19/word2vec-tutorial-the-skip-gram-model/)
+
+---
+### Word2Vec
+
+&lt;img src="img/skipgram.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+The algorithm is going to learn from the number of times each pairing shows up.
+
+
+--
+**Training**: more samples of `(Soviet, Union)` than `(Soviet, Sasquatch)`. 
+
+
+--
+**Learning**: if you give it the word `Soviet` as input, then it will output a much higher probability for `Union` or `Russia` than it will for `Sasquatch.`
+
+
+---
+### Neural networks
+
+There are many ways to find patterns of word co-occurences within a context window.
+
+
+--
+Many of the word embedding models currently in use are created using .accent[neural networks].
+
+
+--
+Neural networks are a kind of .accent[deep learning] modeled (loosely) on the human brain.
+
+
+--
+It makes predictions by identifying patterns using .accent["hidden layers"] between inputs and outputs.
+
+
+--
+A .accent[word2vec] model is a neural network with a single hidden layer that was trained to predict the context of words.
+
+
+---
+### How neural networks work
+
+&lt;iframe width="100%" height="80%" src="https://www.youtube.com/embed/aircAruvnKk" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen&gt;&lt;/iframe&gt;
+
+---
+### Word2Vec architecture
+
+Let's say we have corpus with 10,000 unique words.
+
+
+--
+**Input**: target word represented as a one-hot vector (length = 10,000). 
+
+
+--
+**Task**: Try to predict the probability that other words are proximate to the input word.
+
+
+--
+**Output**: a vector (length = 10,000) of probabilities that a given vocabulary word is in the context window of the target.
+
+
+---
+### Word2Vec architecture
+
+&lt;img src="img/net_arch2.png" width="80%" style="display: block; margin: auto;" /&gt;
+
+[Source](https://towardsdatascience.com/word-vectors-for-non-nlp-data-and-research-people-8d689c692353)
+
+---
+### Hidden layers
+
+&lt;img src="img/net_arch2.png" width="50%" style="display: block; margin: auto;" /&gt;
+
+Word vectors are a **side effects** of a predictive task, not its output! 
+
+
+--
+We just want to learn this **hidden layer** weight matrix – the output layer we toss!
+- the word vector is a learned representation of the input in order to make the best predictions
+- these weights form the word vector, i.e. if you have a 300 neuron hidden layer, you will create a 300-dimension word vector for each word in the corpus.
+
+
+---
+### Two types of Word2Vec models
+
+**Skip-Gram Model** 
+- predicts the context words, given the center word
+- often requires more data for stable representations
+- most useful for people who want to identify patterns within texts
+
+
+--
+**Continuous Bag of Words (CBOW)**
+- tries to predict the center word, given context
+- faster to train
+- more useful in practical applications such as predictive web search
+
+
+---
+### Other Algorithms
+
+1. `Word2Vec`: captures whether words appear in similar contexts. Fast, general-purpose, laptop-friendly.
+
+2. `GloVe`: focuses on words co-occurrences over the whole corpus. Scales poorly.
+
+3. `FastText` improves on Word2Vec by taking word parts into account. Enables training of embeddings on smaller datasets and generalization to unknown words.
+
+
+---
+### Training your own Word2Vec:
+
+Using neural networks in R requires interfacing with broader software tools created by Google and others via an API. 
+
+
+--
+- **TensorFlow**: popular platform for building neural networks
+- **Keras**: popular API for accessing TensorFlow 
+- **`keras` package**: to use Keras in R; attempts to install python and other software for you.
+
+[See this tutorial.](https://blogs.rstudio.com/ai/posts/2017-12-22-word-embeddings-with-keras/)
+
+
+&lt;/br&gt;
+
+--
+**Word2Vec on small (less than 1 million words) corpora?**
+
+--
+.accent[Think again.]
+
+
+---
+### What if you don’t have enough data?
+
+**Another solution**: 
+  - Use pre-trained vectors on large corpora (google news, wikipedia, NYtimes etc.)
+  - Example: FastText as pre-trained word vectors for 157 languages! This allows for comparison between languages.
+  - Retrofitting: fine tuning pre-trained word vectors on an external corpus
+
+
+---
+class: inverse, middle, center
+
+## Application: Gender bias 
+
+From: "Man is to computer programmer as woman is to homemaker? Debiasing word embeddings." Tolga Bolukbasi, Kai-Wei Chang, James Zou, Venkatesh Saligrama, Adam Kalai. NIPS 2016
+
+
+---
+### Gendered Analogies (Bolukbasi 2016)
+
+&lt;img src="img/gender-analogies1.png" width="85%" style="display: block; margin: auto;" /&gt;
+
+
+---
+### Gendered Analogies (Bolukbasi 2016)
+
+&lt;img src="img/gender-analogies2.png" width="85%" style="display: block; margin: auto;" /&gt;
+
+
+---
+### How "gendered" are particular words?
+
+1. Create a new "gender" dimension: 
+  - select pairs of gender antonym words: `he`/`she`, `him`/`her`, `man`/`woman`, etc
+  - average their distances: `mean(he - she, him - her, man - woman, ... )`
+  - result is a "gender" dimension.
+
+--
+2. Project words onto that gender dimension 
+  - map word onto dimension using cosine/euclidian distance
+  - finds position of where the word lies on this dimension
+
+
+---
+### Alternative method (Bolukbasi et al 2016)
+
+Principal components!
+
+&lt;img src="img/gender-dim.png" width="85%" style="display: block; margin: auto;" /&gt;
+
+---
+### Alternative method (Bolukbasi et al 2016)
+
+Principal components!
+
+&lt;img src="img/gender-pc.png" width="85%" style="display: block; margin: auto;" /&gt;
+
+
+---
+### Measuring Bias: Occupations (Bolukbasi et al 2016)
+
+&lt;img src="img/occupations.png" width="85%" style="display: block; margin: auto;" /&gt;
+
+
+---
+### Class and Culture (Kozlowski et al. 2019)
+
+**Construct a class dimension**
+
+&lt;img src="img/A.png" width="85%" style="display: block; margin: auto;" /&gt;
+
+
+---
+### Class and Culture (Kozlowski et al. 2019)
+
+**Project words onto that dimension**
+
+&lt;img src="img/B.png" width="85%" style="display: block; margin: auto;" /&gt;
+
+
+---
+### Class and Culture (Kozlowski et al. 2019)
+
+**Simultaneous Projection of Words onto Multiple Dimensions**
+
+&lt;img src="img/C.png" width="85%" style="display: block; margin: auto;" /&gt;
+
+---
+### Other uses of word embeddings
+
+1. building blocks for more complex tasks: classification, clustering, information retrieval, etc.
+
+--
+2. aggregate word vectors (e.g., by averaging) to make sentence, paragraph, or document embeddings
+
+
+--
+See Evans' deep learning class for more.
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
